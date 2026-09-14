@@ -1,0 +1,565 @@
+// Fonts
+@import url('https://fonts.bunny.net/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+
+/* =========================================
+   LOGIN PAGE
+========================================= */
+
+.login-page {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: #f5f6f8;
+    font-family: Arial, sans-serif;
+}
+
+.login-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* =========================================
+   BAGIAN KIRI
+========================================= */
+
+.login-left {
+    width: 38%;
+    min-height: 100vh;
+    background: #0f172a;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-logo {
+    width: 75%;
+    max-width: 500px;
+    height: auto;
+    object-fit: contain;
+}
+
+/* =========================================
+   BAGIAN KANAN
+========================================= */
+
+.login-right {
+    width: 62%;
+    min-height: 100vh;
+    background: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-form-container {
+    width: 65%;
+    max-width: 650px;
+}
+
+.login-form-container h1 {
+    margin: 0;
+    font-size: 48px;
+    font-weight: 700;
+    color: #000;
+}
+
+.login-subtitle {
+    margin-top: 8px;
+    margin-bottom: 55px;
+    font-size: 24px;
+    color: #111;
+}
+
+/* =========================================
+   INPUT
+========================================= */
+
+.login-input-group {
+    margin-bottom: 28px;
+}
+
+.login-input-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 27px;
+    color: #111;
+}
+
+.login-input-group input {
+    width: 100%;
+    height: 65px;
+    padding: 0 18px;
+
+    border: 4px solid #777;
+    border-radius: 24px;
+
+    font-size: 22px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.login-input-group input:focus {
+    border-color: #2864e8;
+}
+
+/* =========================================
+   PASSWORD
+========================================= */
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 65px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 45px;
+    height: 45px;
+
+    border: none;
+    background: transparent;
+
+    font-size: 28px;
+    color: #555;
+    cursor: pointer;
+}
+
+/* =========================================
+   OPTIONS
+========================================= */
+
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-top: -5px;
+    font-size: 18px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.remember-me input {
+    width: 22px;
+    height: 22px;
+}
+
+.login-options a,
+.register-link a {
+    color: #004cff;
+    text-decoration: none;
+}
+
+.login-options a:hover,
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
+   REGISTER
+========================================= */
+
+.register-link {
+    margin-top: 12px;
+    font-size: 18px;
+}
+
+/* =========================================
+   LOGIN BUTTON
+========================================= */
+
+.login-button {
+    width: 100%;
+    height: 82px;
+
+    margin-top: 80px;
+
+    border: none;
+    border-radius: 22px;
+
+    background: #2864e8;
+    color: white;
+
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: #1e55ce;
+}
+
+/* =========================================
+   ERROR
+========================================= */
+
+.login-error {
+    padding: 15px;
+    margin-bottom: 25px;
+
+    border-radius: 10px;
+    background: #ffe5e5;
+    color: #c00000;
+
+    font-size: 16px;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 768px) {
+
+    .login-container {
+        flex-direction: column;
+    }
+
+    .login-left {
+        width: 100%;
+        min-height: 250px;
+    }
+
+    .login-logo {
+        width: 60%;
+    }
+
+    .login-right {
+        width: 100%;
+        padding: 40px 20px;
+    }
+
+    .login-form-container {
+        width: 90%;
+    }
+
+    .login-form-container h1 {
+        font-size: 40px;
+    }
+
+    .login-subtitle {
+        font-size: 20px;
+    }
+}
+    /* =====================================================
+   DASHBOARD
+===================================================== */
+
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.dashboard-wrapper {
+    min-height: 100vh;
+    display: flex;
+    background: #ffffff;
+}
+
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+    width: 290px;
+    min-height: 100vh;
+    background: #0f172a;
+    flex-shrink: 0;
+    padding: 20px 16px;
+    box-sizing: border-box;
+}
+
+.sidebar-logo {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.sidebar-logo img {
+    width: 150px;
+    height: 75px;
+    object-fit: contain;
+}
+
+
+/* MENU */
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sidebar-item {
+    height: 52px;
+    padding: 0 14px;
+    border-radius: 11px;
+
+    display: flex;
+    align-items: center;
+    gap: 13px;
+
+    color: #ffffff;
+    text-decoration: none;
+
+    font-size: 22px;
+    font-weight: 400;
+
+    transition: 0.2s;
+}
+
+.sidebar-item i {
+    width: 32px;
+    font-size: 28px;
+    text-align: center;
+}
+
+.sidebar-item:hover {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.sidebar-item.active {
+    background: #2563eb;
+}
+
+.sidebar-logout {
+    margin-top: 5px;
+}
+
+
+/* ================= BAGIAN KANAN ================= */
+
+.dashboard-main {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+}
+
+
+/* TOPBAR */
+
+.dashboard-topbar {
+    height: 90px;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    padding: 0 35px;
+
+    border-bottom: 1px solid #cccccc;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+
+    box-sizing: border-box;
+}
+
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    font-size: 25px;
+}
+
+.topbar-user i {
+    font-size: 43px;
+}
+
+
+/* ================= CONTENT ================= */
+
+.dashboard-content {
+    padding: 25px 35px;
+}
+
+
+/* HEADER */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 18px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+
+    font-size: 29px;
+    font-weight: 700;
+}
+
+.dashboard-header p {
+    margin: 0;
+
+    font-size: 17px;
+}
+
+
+/* BUTTON PEMESANAN */
+
+.btn-new-order {
+    height: 45px;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    padding: 0 20px;
+
+    background: #2563eb;
+    color: white;
+
+    border-radius: 11px;
+
+    text-decoration: none;
+    font-size: 21px;
+
+    transition: 0.2s;
+}
+
+.btn-new-order:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+.btn-new-order i {
+    font-size: 20px;
+}
+
+
+/* ================= STAT CARD ================= */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+
+    margin: 10px 10px 38px;
+}
+
+.stat-card {
+    min-height: 155px;
+
+    border: 1px solid #777;
+    border-radius: 12px;
+
+    padding: 15px;
+
+    box-sizing: border-box;
+}
+
+.stat-number {
+    font-size: 30px;
+    font-weight: 600;
+
+    margin-bottom: 25px;
+}
+
+.stat-green {
+    color: #20c20e;
+}
+
+.stat-orange {
+    color: #ff9900;
+}
+
+.stat-blue {
+    color: #2563eb;
+}
+
+.stat-title {
+    font-size: 17px;
+    margin-bottom: 3px;
+}
+
+.stat-subtitle {
+    color: #888;
+    font-size: 16px;
+}
+
+
+/* ================= TRANSACTION ================= */
+
+.transaction-card {
+    border: 1px solid #777;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.transaction-title {
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 13px;
+
+    border-bottom: 1px solid #777;
+
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transaction-table th,
+.transaction-table td {
+    padding: 13px 12px;
+
+    border-bottom: 1px solid #777;
+
+    text-align: left;
+
+    font-size: 16px;
+}
+
+.transaction-table th {
+    font-weight: 400;
+}
+
+.transaction-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* STATUS */
+
+.status-selesai {
+    display: inline-block;
+
+    padding: 2px 9px;
+
+    border-radius: 8px;
+
+    background: #dcffd9;
+    color: #16c60c;
+
+    font-size: 14px;
+}
