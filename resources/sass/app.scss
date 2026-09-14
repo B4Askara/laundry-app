@@ -563,3 +563,17 @@ body {
 
     font-size: 14px;
 }
+
+/* REWARD STAMPEL */
+
+.reward-stamp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #e8f1ff;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 600;
+}

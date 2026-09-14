@@ -2,233 +2,136 @@
 
 @section('content')
 
-<div class="container-fluid">
-
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <div>
-            <h2 class="mb-1">Reward Stempel</h2>
-
-            <p class="text-muted mb-0">
-                Kelola reward yang dapat ditukarkan pelanggan.
-            </p>
-        </div>
-
-        <a href="{{ route('reward.create') }}"
-           class="btn btn-primary">
-
-            + Tambah Reward
-
-        </a>
-
+<div class="dashboard-header">
+    <div>
+        <h1>Reward Stempel</h1>
+        <p>Kelola reward yang dapat ditukarkan oleh pelanggan.</p>
     </div>
 
-
-    <!-- PESAN SUKSES -->
-
-    @if(session('success'))
-
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-
-    @endif
-
-
-    <!-- ERROR -->
-
-    @if ($errors->any())
-
-        <div class="alert alert-danger">
-
-            <strong>Terjadi kesalahan:</strong>
-
-            <ul class="mb-0">
-
-                @foreach ($errors->all() as $error)
-
-                    <li>{{ $error }}</li>
-
-                @endforeach
-
-            </ul>
-
-        </div>
-
-    @endif
-
-
-    <!-- TABEL REWARD -->
-
-    <div class="card">
-
-        <div class="card-body">
-
-            <div class="table-responsive">
-
-                <table class="table table-bordered table-hover align-middle">
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th width="60">
-                                No
-                            </th>
-
-                            <th>
-                                Nama Reward
-                            </th>
-
-                            <th>
-                                Layanan
-                            </th>
-
-                            <th width="150">
-                                Minimal Stempel
-                            </th>
-
-                            <th>
-                                Keterangan
-                            </th>
-
-                            <th width="180">
-                                Aksi
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        @forelse ($rewards as $reward)
-
-                            <tr>
-
-                                <td>
-                                    {{ $loop->iteration }}
-                                </td>
-
-
-                                <td>
-                                    <strong>
-                                        {{ $reward->nama_reward }}
-                                    </strong>
-                                </td>
-
-
-                                <td>
-
-                                    @if ($reward->layanan)
-
-                                        {{ $reward->layanan->nama_layanan }}
-
-                                    @else
-
-                                        <span class="text-muted">
-                                            Layanan tidak ditemukan
-                                        </span>
-
-                                    @endif
-
-                                </td>
-
-
-                                <td>
-
-                                    <span class="badge bg-primary">
-
-                                        {{ $reward->minimal_stempel }}
-                                        Stempel
-
-                                    </span>
-
-                                </td>
-
-
-                                <td>
-
-                                    {{ $reward->keterangan ?: '-' }}
-
-                                </td>
-
-
-                                <td>
-
-                                    <a href="{{ route('reward.edit', $reward->id_reward) }}"
-                                       class="btn btn-warning btn-sm">
-
-                                        Edit
-
-                                    </a>
-
-
-                                    <form
-                                        action="{{ route('reward.destroy', $reward->id_reward) }}"
-                                        method="POST"
-                                        class="d-inline"
-                                        onsubmit="return confirm('Yakin ingin menghapus reward ini?')"
-                                    >
-
-                                        @csrf
-
-                                        @method('DELETE')
-
-                                        <button
-                                            type="submit"
-                                            class="btn btn-danger btn-sm"
-                                        >
-
-                                            Hapus
-
-                                        </button>
-
-                                    </form>
-
-                                </td>
-
-                            </tr>
-
-                        @empty
-
-                            <tr>
-
-                                <td
-                                    colspan="6"
-                                    class="text-center py-4"
+    <a href="{{ route('reward.create') }}" class="btn-new-order">
+        <i class="bi bi-plus-lg"></i>
+        Tambah Reward
+    </a>
+</div>
+
+@if(session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
+
+<div class="transaction-card">
+
+    <div class="transaction-title">
+        Daftar Reward
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="transaction-table">
+
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Reward</th>
+                    <th>Layanan</th>
+                    <th>Minimal Stempel</th>
+                    <th>Keterangan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @forelse($rewards as $reward)
+
+                    <tr>
+
+                        <td>
+                            {{ $loop->iteration }}
+                        </td>
+
+                        <td>
+                            <strong>
+                                {{ $reward->nama_reward }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ $reward->layanan->nama_layanan ?? '-' }}
+                        </td>
+
+                        <td>
+                            <span class="reward-stamp-badge">
+                                <i class="bi bi-ticket-perforated-fill"></i>
+                                {{ $reward->minimal_stempel }} Stempel
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ $reward->keterangan ?: '-' }}
+                        </td>
+
+                        <td>
+
+                            <a href="{{ route('reward.edit', $reward->id_reward) }}"
+                               class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+
+                            <form
+                                action="{{ route('reward.destroy', $reward->id_reward) }}"
+                                method="POST"
+                                class="d-inline"
+                                onsubmit="return confirm('Yakin ingin menghapus reward ini?')"
+                            >
+
+                                @csrf
+                                @method('DELETE')
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-danger"
                                 >
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
 
-                                    <div class="text-muted">
+                            </form>
 
-                                        Belum ada reward.
+                        </td>
 
-                                    </div>
+                    </tr>
 
-                                    <a
-                                        href="{{ route('reward.create') }}"
-                                        class="btn btn-primary mt-2"
-                                    >
+                @empty
 
-                                        + Tambah Reward Pertama
+                    <tr>
 
-                                    </a>
+                        <td colspan="6" class="text-center py-5">
 
-                                </td>
+                            <div class="text-muted mb-2">
+                                <i class="bi bi-ticket-perforated"
+                                   style="font-size: 35px;"></i>
+                            </div>
 
-                            </tr>
+                            <div class="text-muted">
+                                Belum ada reward.
+                            </div>
 
-                        @endforelse
+                            <a href="{{ route('reward.create') }}"
+                               class="btn btn-primary mt-3">
+                                <i class="bi bi-plus-lg"></i>
+                                Tambah Reward Pertama
+                            </a>
 
-                    </tbody>
+                        </td>
 
-                </table>
+                    </tr>
 
-            </div>
+                @endforelse
 
-        </div>
+            </tbody>
+
+        </table>
 
     </div>
 

@@ -32,7 +32,8 @@
 
         <nav class="sidebar-menu">
 
-            <a href="#" class="sidebar-item active">
+            <a href="{{ route('home') }}"
+                class="sidebar-item {{ request()->routeIs('home') ? 'active' : '' }}">
                 <i class="bi bi-house-fill"></i>
                 <span>Dashboard</span>
             </a>
@@ -52,7 +53,8 @@
                 <span>Transaksi</span>
             </a>
 
-            <a href="#" class="sidebar-item">
+            <a href="{{ route('reward.index') }}"
+                class="sidebar-item {{ request()->routeIs('reward.*') ? 'active' : '' }}">
                 <i class="bi bi-ticket-perforated-fill"></i>
                 <span>Reward Stempel</span>
             </a>

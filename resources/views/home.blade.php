@@ -9,7 +9,7 @@
         <p>Berikut ringkasan hari ini.</p>
     </div>
 
-    <a href="#" class="btn-new-order">
+    <a href="{{ route('pemesanan.create') }}" class="btn-new-order">
         <i class="bi bi-plus-lg"></i>
         Pemesanan baru
     </a>
