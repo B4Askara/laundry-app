@@ -9,6 +9,7 @@ use App\Models\Layanan;
 use App\Models\Pengambilan;
 use App\Models\Reward;
 use App\Models\DetailPemesanan;
+use App\Models\Pembayaran;
 
 class Pemesanan extends Model
 {
@@ -81,6 +82,16 @@ class Pemesanan extends Model
     {
         return $this->hasMany(
             DetailPemesanan::class,
+            'id_pemesanan',
+            'id_pemesanan'
+        );
+    }
+
+    // Relasi ke pembayaran
+    public function pembayaran()
+    {
+        return $this->hasOne(
+            Pembayaran::class,
             'id_pemesanan',
             'id_pemesanan'
         );
