@@ -48,7 +48,8 @@
                 <span>Pelanggan</span>
             </a>
 
-            <a href="#" class="sidebar-item">
+            <a href="{{ route('pembayaran.index') }}"
+                class="sidebar-item {{ request()->routeIs('pembayaran.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i>
                 <span>Transaksi</span>
             </a>

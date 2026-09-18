@@ -16,6 +16,7 @@ class DetailPemesanan extends Model
     protected $fillable = [
         'id_pemesanan',
         'id_layanan',
+        'id_reward',
         'berat_jumlah',
         'harga',
         'subtotal',
@@ -44,6 +45,15 @@ class DetailPemesanan extends Model
             Layanan::class,
             'id_layanan',
             'id_layanan'
+        );
+    }
+
+    public function reward()
+    {
+        return $this->belongsTo(
+            Reward::class,
+            'id_reward',
+            'id_reward'
         );
     }
 }

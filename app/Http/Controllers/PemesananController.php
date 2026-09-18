@@ -23,7 +23,8 @@ class PemesananController extends Controller
             'layanan',
             'pengambilan',
             'reward',
-            'detailPemesanan.layanan'
+            'detailPemesanan.layanan',
+            'pembayaran'
         ])
         ->latest()
         ->get();
@@ -56,10 +57,15 @@ class PemesananController extends Controller
     {
         $request->validate([
             'id_pelanggan' => 'required|exists:pelanggans,id_pelanggan',
-            'id_pengambilan' => 'required|exists:pengambilans,id_pengambilan',
-            'tanggal' => 'required|date',
 
-            'layanan' => 'required|array|min:1',
+            'id_pengambilan' =>
+                'required|exists:pengambilans,id_pengambilan',
+
+            'tanggal' =>
+                'required|date',
+
+            'layanan' =>
+                'required|array|min:1',
 
             'layanan.*.id_layanan' =>
                 'required|exists:layanans,id_layanan',
@@ -73,39 +79,70 @@ class PemesananController extends Controller
 
         DB::transaction(function () use ($request) {
 
-            // Ambil pelanggan
+            /*
+             * Ambil pelanggan.
+             */
             $pelanggan = Pelanggan::findOrFail(
                 $request->id_pelanggan
             );
 
-            // Ambil pengambilan
+            /*
+             * Ambil metode pengambilan.
+             */
             $pengambilan = Pengambilan::findOrFail(
                 $request->id_pengambilan
             );
 
             /*
-             * Buat pemesanan utama terlebih dahulu.
-             * Nilai subtotal dan total sementara 0.
+             * Ambil layanan pertama.
+             *
+             * id_layanan pada tabel pemesanans masih wajib diisi
+             * berdasarkan migration yang sekarang.
+             *
+             * Data seluruh layanan tetap disimpan di
+             * detail_pemesanans.
+             */
+            $layananPertama = Layanan::findOrFail(
+                $request->layanan[0]['id_layanan']
+            );
+
+            /*
+             * Buat pemesanan utama.
              */
             $pemesanan = Pemesanan::create([
-                'id_user' => auth()->id(),
-                'id_pelanggan' => $request->id_pelanggan,
+                'id_user' =>
+                    auth()->id(),
 
-                // Kolom lama tetap diisi null
-                // karena sekarang layanan disimpan di detail.
-                'id_layanan' => null,
-                'id_pengambilan' => $request->id_pengambilan,
-                'id_reward' => null,
+                'id_pelanggan' =>
+                    $request->id_pelanggan,
 
-                'berat_jumlah' => 0,
-                'subtotal' => 0,
-                'ongkir' => $pengambilan->ongkir,
-                'total_harga' => 0,
-                'tanggal' => $request->tanggal,
+                'id_layanan' =>
+                    $layananPertama->id_layanan,
+
+                'id_pengambilan' =>
+                    $request->id_pengambilan,
+
+                'id_reward' =>
+                    null,
+
+                'berat_jumlah' =>
+                    0,
+
+                'subtotal' =>
+                    0,
+
+                'ongkir' =>
+                    $pengambilan->ongkir,
+
+                'total_harga' =>
+                    0,
+
+                'tanggal' =>
+                    $request->tanggal,
             ]);
 
             $subtotal = 0;
-            $rewardDipakai = 0;
+            $totalBeratJumlah = 0;
 
             /*
              * Proses setiap layanan.
@@ -116,26 +153,33 @@ class PemesananController extends Controller
                     $item['id_layanan']
                 );
 
-                $beratJumlah = (float) $item['berat_jumlah'];
+                $beratJumlah =
+                    (float) $item['berat_jumlah'];
 
-                $harga = (float) $layanan->harga;
+                $harga =
+                    (float) $layanan->harga;
 
+                /*
+                 * Hitung harga normal terlebih dahulu.
+                 */
                 $subtotalLayanan =
                     $harga * $beratJumlah;
 
                 $pakaiReward = false;
+                $reward = null;
 
                 /*
-                 * Kalau pelanggan memilih reward
+                 * CEK REWARD SEBELUM HARGA FINAL.
                  */
                 if (!empty($item['id_reward'])) {
 
                     $reward = Reward::with('layanan')
-                        ->findOrFail($item['id_reward']);
+                        ->findOrFail(
+                            $item['id_reward']
+                        );
 
                     /*
-                     * Pastikan reward memang untuk
-                     * layanan yang sedang dipilih.
+                     * Pastikan reward sesuai dengan layanan.
                      */
                     if (
                         $reward->id_layanan ==
@@ -143,7 +187,10 @@ class PemesananController extends Controller
                     ) {
 
                         /*
-                         * Cek jumlah stempel pelanggan.
+                         * Pastikan stempel pelanggan mencukupi.
+                         *
+                         * Di tahap pemesanan hanya melakukan pengecekan.
+                         * Stempel BELUM dikurangi.
                          */
                         if (
                             $pelanggan->stempel >=
@@ -152,12 +199,10 @@ class PemesananController extends Controller
 
                             $pakaiReward = true;
 
-                            // Harga layanan menjadi GRATIS
+                            /*
+                             * Reward membuat layanan gratis.
+                             */
                             $subtotalLayanan = 0;
-
-                            // Kurangi stempel
-                            $rewardDipakai +=
-                                $reward->minimal_stempel;
                         }
                     }
                 }
@@ -172,6 +217,9 @@ class PemesananController extends Controller
                     'id_layanan' =>
                         $layanan->id_layanan,
 
+                    'id_reward' =>
+                        $pakaiReward ? $reward->id_reward : null,
+
                     'berat_jumlah' =>
                         $beratJumlah,
 
@@ -185,27 +233,25 @@ class PemesananController extends Controller
                         $pakaiReward,
                 ]);
 
-                $subtotal += $subtotalLayanan;
+                /*
+                 * Tambahkan ke total.
+                 */
+                $subtotal +=
+                    $subtotalLayanan;
+
+                $totalBeratJumlah +=
+                    $beratJumlah;
             }
 
             /*
-             * Kurangi stempel yang digunakan untuk reward.
+             * Ongkir.
              */
-            $pelanggan->stempel =
-                $pelanggan->stempel - $rewardDipakai;
+            $ongkir =
+                $pengambilan->ongkir;
 
             /*
-             * Setiap transaksi mendapatkan 1 stempel.
+             * Total akhir.
              */
-            $pelanggan->stempel += 1;
-
-            $pelanggan->save();
-
-            /*
-             * Hitung total akhir.
-             */
-            $ongkir = $pengambilan->ongkir;
-
             $totalHarga =
                 $subtotal + $ongkir;
 
@@ -213,6 +259,9 @@ class PemesananController extends Controller
              * Update pemesanan utama.
              */
             $pemesanan->update([
+                'berat_jumlah' =>
+                    $totalBeratJumlah,
+
                 'subtotal' =>
                     $subtotal,
 
@@ -240,7 +289,8 @@ class PemesananController extends Controller
         $pemesanan = Pemesanan::with([
             'pelanggan',
             'pengambilan',
-            'detailPemesanan.layanan'
+            'detailPemesanan.layanan',
+            'pembayaran'
         ])->findOrFail($id);
 
         return view(
@@ -282,9 +332,6 @@ class PemesananController extends Controller
         Request $request,
         string $id
     ) {
-        // Untuk sementara kita fokus menyelesaikan
-        // proses pemesanan + reward terlebih dahulu.
-
         return redirect()
             ->route('pemesanan.index')
             ->with(
