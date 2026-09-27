@@ -81,7 +81,7 @@
             <thead>
                 <tr>
                     <th>No</th>
-                    <th>NamaPelanggan</th>
+                    <th>Nama Pelanggan</th>
                     <th>Layanan</th>
                     <th>Total</th>
                     <th>Status</th>
