@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Pelanggan;
+use App\Models\Pemesanan;
 
 class HomeController extends Controller
 {
@@ -23,8 +25,23 @@ class HomeController extends Controller
      */
     public function index()
     {
-    $totalPelanggan = \App\Models\Pelanggan::count();
+        // Total pelanggan
+        $totalPelanggan = Pelanggan::count();
 
-    return view('home', compact('totalPelanggan'));
+        // 5 transaksi terbaru yang sudah dibayar
+        $transaksiTerbaru = Pemesanan::with([
+            'pelanggan',
+            'detailPemesanan.layanan',
+            'pembayaran'
+        ])
+        ->whereHas('pembayaran')
+        ->latest('tanggal')
+        ->take(5)
+        ->get();
+
+        return view('home', compact(
+            'totalPelanggan',
+            'transaksiTerbaru'
+        ));
     }
 }

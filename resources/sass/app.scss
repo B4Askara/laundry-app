@@ -346,6 +346,19 @@ body {
 
 .sidebar-logout {
     margin-top: 5px;
+    background: transparent;
+    color: #ffffff;
+    border: none;
+    outline: none;
+}
+
+.sidebar-logout:hover,
+.sidebar-logout:focus,
+.sidebar-logout:active {
+    background: #2563eb;
+    color: #ffffff;
+    outline: none;
+    box-shadow: none;
 }
 
 
@@ -576,4 +589,247 @@ body {
     color: #2563eb;
     font-size: 13px;
     font-weight: 600;
+}
+
+/* ============================= */
+/* PROFILE POPUP */
+/* ============================= */
+
+.topbar-user-wrapper {
+    position: relative;
+}
+
+.topbar-user {
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    color: #111827;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 10px;
+}
+
+.topbar-user:hover {
+    background: #f3f4f6;
+}
+
+.topbar-user > i:first-child {
+    font-size: 30px;
+}
+
+.profile-arrow {
+    font-size: 12px !important;
+    margin-left: 2px;
+}
+
+/* POPUP */
+
+.profile-popup {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 310px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 9999;
+
+    display: none;
+}
+
+.profile-popup.show {
+    display: block;
+}
+
+/* HEADER */
+
+.profile-popup-header {
+    padding: 24px 20px 20px;
+    text-align: center;
+    background: #f8fafc;
+}
+
+.profile-avatar {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: #e8f1ff;
+    color: #2563eb;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-avatar i {
+    font-size: 38px;
+}
+
+.profile-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.profile-email {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #6b7280;
+    word-break: break-word;
+}
+
+/* MENU */
+
+.profile-popup-menu {
+    padding: 8px;
+}
+
+.profile-popup-menu form {
+    margin: 0;
+}
+
+.profile-menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 12px 14px;
+    border-radius: 9px;
+
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    color: #1f2937;
+
+    text-align: left;
+    cursor: pointer;
+}
+
+.profile-menu-item:hover {
+    background: #f3f4f6;
+}
+
+.profile-menu-item i {
+    font-size: 18px;
+}
+
+.logout-item {
+    color: #dc2626;
+}
+
+.logout-item:hover {
+    background: #fef2f2;
+}
+
+/* =========================================
+   SIDEBAR TOGGLE
+========================================= */
+
+.sidebar {
+    position: relative;
+    transition: width 0.3s ease;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    top: 25px;
+    right: 15px;
+
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+    color: #ffffff;
+
+    font-size: 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    z-index: 10;
+}
+
+.sidebar-toggle:hover {
+    background: #2563eb;
+}
+
+
+/* ANIMASI */
+
+.sidebar-logo {
+    transition: 0.3s ease;
+}
+
+.sidebar-item {
+    transition: 0.3s ease;
+}
+
+
+/* =========================================
+   SIDEBAR SAAT DITUTUP
+========================================= */
+
+.dashboard-wrapper.sidebar-collapsed .sidebar {
+    width: 90px;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-logo {
+    margin-top: 45px;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-logo img {
+    width: 60px;
+    height: 60px;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-item {
+    justify-content: center;
+    padding: 0;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-item span {
+    display: none;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-item i {
+    width: auto;
+    font-size: 25px;
+}
+
+.dashboard-wrapper.sidebar-collapsed .sidebar-toggle {
+    right: 50%;
+    transform: translateX(50%);
+}
+
+
+/* =========================================
+   TOMBOL SIDEBAR DI TOPBAR
+========================================= */
+
+.mobile-sidebar-toggle {
+    display: none;
+
+    border: none;
+    background: transparent;
+
+    font-size: 28px;
+    color: #111827;
+
+    cursor: pointer;
 }
