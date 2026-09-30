@@ -16,17 +16,22 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])
     ->name('home');
 
+// DATA PELANGGAN
 Route::resource('pelanggan', PelangganController::class)
     ->middleware('auth');
 
+// DATA LAYANAN
 Route::resource('layanan', LayananController::class)
     ->middleware('auth');
 
+// ROUTE PEMESANAN
 Route::resource('pemesanan', PemesananController::class)
     ->middleware('auth');
 
+// DATA REWARD
 Route::resource('reward', RewardController::class);
 
+// TRANSAKSI DAN PEMBAYARAN
 Route::get('/pembayaran', [PembayaranController::class, 'index'])
     ->name('pembayaran.index')
     ->middleware('auth');

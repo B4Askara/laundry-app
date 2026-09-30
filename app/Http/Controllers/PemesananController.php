@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\DB;
 class PemesananController extends Controller
 {
     /**
+     * =========================================
+     * PEMESANAN
+     * =========================================
+     */
+
+    /**
      * Menampilkan daftar pemesanan.
      */
     public function index()
@@ -29,7 +35,10 @@ class PemesananController extends Controller
         ->latest()
         ->get();
 
-        return view('pemesanan.index', compact('pemesanans'));
+        return view(
+            'pemesanan.index',
+            compact('pemesanans')
+        );
     }
 
     /**
@@ -42,12 +51,15 @@ class PemesananController extends Controller
         $pengambilans = Pengambilan::all();
         $rewards = Reward::with('layanan')->get();
 
-        return view('pemesanan.create', compact(
-            'pelanggans',
-            'layanans',
-            'pengambilans',
-            'rewards'
-        ));
+        return view(
+            'pemesanan.create',
+            compact(
+                'pelanggans',
+                'layanans',
+                'pengambilans',
+                'rewards'
+            )
+        );
     }
 
     /**
@@ -56,7 +68,8 @@ class PemesananController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_pelanggan' => 'required|exists:pelanggans,id_pelanggan',
+            'id_pelanggan' =>
+                'required|exists:pelanggans,id_pelanggan',
 
             'id_pengambilan' =>
                 'required|exists:pengambilans,id_pengambilan',
@@ -218,7 +231,9 @@ class PemesananController extends Controller
                         $layanan->id_layanan,
 
                     'id_reward' =>
-                        $pakaiReward ? $reward->id_reward : null,
+                        $pakaiReward
+                            ? $reward->id_reward
+                            : null,
 
                     'berat_jumlah' =>
                         $beratJumlah,
@@ -317,8 +332,8 @@ class PemesananController extends Controller
             'pemesanan.edit',
             compact(
                 'pemesanan',
-                'pelanggans',
                 'layanans',
+                'pelanggans',
                 'pengambilans',
                 'rewards'
             )
