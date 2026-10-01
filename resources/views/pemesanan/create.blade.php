@@ -19,44 +19,49 @@
     @endif
 
     <form action="{{ route('pemesanan.store') }}" method="POST">
+
         @csrf
 
         <!-- ==================== PELANGGAN ==================== -->
-
         <div class="card mb-3">
             <div class="card-body">
 
                 <h5 class="mb-3">Data Pelanggan</h5>
 
-                <div class="mb-3">
+                <div class="mb-3 position-relative">
+
                     <label class="form-label">
                         Pelanggan
                     </label>
 
-                    <select
-                        name="id_pelanggan"
-                        id="id_pelanggan"
+                    {{-- Input pencarian nama pelanggan --}}
+                    <input
+                        type="text"
+                        id="nama_pelanggan"
                         class="form-control"
+                        placeholder="Ketik nama pelanggan..."
+                        autocomplete="off"
                         required
                     >
 
-                        <option value="">
-                            -- Pilih Pelanggan --
-                        </option>
+                    {{-- ID pelanggan yang dikirim ke Laravel --}}
+                    <input
+                        type="hidden"
+                        name="id_pelanggan"
+                        id="id_pelanggan"
+                    >
 
-                        @foreach ($pelanggans as $pelanggan)
-
-                            <option
-                                value="{{ $pelanggan->id_pelanggan }}"
-                                data-stempel="{{ $pelanggan->stempel }}"
-                            >
-                                {{ $pelanggan->nama }}
-                                - Stempel: {{ $pelanggan->stempel }}
-                            </option>
-
-                        @endforeach
-
-                    </select>
+                    {{-- Hasil autocomplete --}}
+                    <div
+                        id="hasil-pelanggan"
+                        class="list-group position-absolute w-100"
+                        style="
+                            display: none;
+                            z-index: 1000;
+                            max-height: 250px;
+                            overflow-y: auto;
+                        "
+                    ></div>
 
                 </div>
 
@@ -68,7 +73,6 @@
                     <span id="jumlah-stempel">
                         0
                     </span>
-
                 </div>
 
             </div>
@@ -76,9 +80,7 @@
 
 
         <!-- ==================== LAYANAN ==================== -->
-
         <div class="card mb-3">
-
             <div class="card-body">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -101,13 +103,11 @@
                 <div id="container-layanan">
 
                     <!-- BARIS LAYANAN PERTAMA -->
-
                     <div class="layanan-item border rounded p-3 mb-3">
 
                         <div class="row">
 
                             <!-- Pilih layanan -->
-
                             <div class="col-md-5 mb-3">
 
                                 <label class="form-label">
@@ -130,12 +130,10 @@
                                             value="{{ $layanan->id_layanan }}"
                                             data-harga="{{ $layanan->harga }}"
                                         >
-
                                             {{ $layanan->nama_layanan }}
                                             - Rp
                                             {{ number_format($layanan->harga, 0, ',', '.') }}
                                             / {{ $layanan->satuan }}
-
                                         </option>
 
                                     @endforeach
@@ -146,7 +144,6 @@
 
 
                             <!-- Jumlah -->
-
                             <div class="col-md-3 mb-3">
 
                                 <label class="form-label">
@@ -167,7 +164,6 @@
 
 
                             <!-- Reward -->
-
                             <div class="col-md-4 mb-3">
 
                                 <label class="form-label">
@@ -188,12 +184,10 @@
                                         <option
                                             value="{{ $reward->id_reward }}"
                                             data-layanan="{{ $reward->id_layanan }}"
-                                            data-stempel="{{ $reward->jumlah_stamp }}"
+                                            data-stempel="{{ $reward->minimal_stempel }}"
                                         >
-
                                             {{ $reward->nama_reward }}
-                                            - {{ $reward->jumlah_stamp }} Stempel
-
+                                            - {{ $reward->minimal_stempel }} Stempel
                                         </option>
 
                                     @endforeach
@@ -206,7 +200,6 @@
 
 
                         <!-- Harga -->
-
                         <div class="row">
 
                             <div class="col-md-4">
@@ -254,12 +247,10 @@
                 </div>
 
             </div>
-
         </div>
 
 
         <!-- ==================== PENGAMBILAN ==================== -->
-
         <div class="card mb-3">
 
             <div class="card-body">
@@ -291,9 +282,7 @@
                                 value="{{ $pengambilan->id_pengambilan }}"
                                 data-ongkir="{{ $pengambilan->ongkir }}"
                             >
-
                                 {{ ucfirst($pengambilan->metode) }}
-
                             </option>
 
                         @endforeach
@@ -325,7 +314,6 @@
 
 
         <!-- ==================== TOTAL ==================== -->
-
         <div class="card mb-3">
 
             <div class="card-body">
@@ -384,7 +372,6 @@
 
 
         <!-- Input tersembunyi untuk total -->
-
         <input
             type="hidden"
             name="subtotal"
@@ -408,7 +395,6 @@
 
 
         <!-- ==================== TANGGAL ==================== -->
-
         <div class="card mb-3">
 
             <div class="card-body">
@@ -465,11 +451,27 @@ document.addEventListener('DOMContentLoaded', function () {
     const tombolTambah =
         document.getElementById('tambah-layanan');
 
-    const pelangganSelect =
+
+    /* =========================================================
+       PELANGGAN
+    ========================================================= */
+
+    const namaPelangganInput =
+        document.getElementById('nama_pelanggan');
+
+    const idPelangganInput =
         document.getElementById('id_pelanggan');
+
+    const hasilPelanggan =
+        document.getElementById('hasil-pelanggan');
 
     const jumlahStempel =
         document.getElementById('jumlah-stempel');
+
+
+    /* =========================================================
+       PENGAMBILAN
+    ========================================================= */
 
     const pengambilanSelect =
         document.getElementById('id_pengambilan');
@@ -487,52 +489,235 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('total_harga');
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Format Rupiah
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       FORMAT RUPIAH
+    ========================================================= */
 
     function rupiah(angka) {
 
         return 'Rp ' +
-            Number(angka).toLocaleString(
-                'id-ID'
-            );
+            Number(angka).toLocaleString('id-ID');
 
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Update stempel pelanggan
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       AUTOCOMPLETE PELANGGAN
+    ========================================================= */
 
-    pelangganSelect.addEventListener(
-        'change',
+    let timerPencarian;
+
+    namaPelangganInput.addEventListener(
+        'input',
         function () {
 
-            const option =
-                this.options[this.selectedIndex];
+            const keyword =
+                this.value.trim();
 
-            const stempel =
-                option.dataset.stempel || 0;
+            clearTimeout(timerPencarian);
 
-            jumlahStempel.textContent =
-                stempel;
+            /*
+             * Kalau user mengetik ulang,
+             * pelanggan harus dipilih ulang.
+             */
+            idPelangganInput.value = '';
 
-            cekSemuaReward();
+            jumlahStempel.textContent = '0';
+
+
+            /*
+             * Kalau input kosong
+             */
+            if (keyword.length < 1) {
+
+                hasilPelanggan.innerHTML = '';
+
+                hasilPelanggan.style.display =
+                    'none';
+
+                cekSemuaReward();
+
+                return;
+
+            }
+
+
+            /*
+             * Tunggu 300ms sebelum mencari
+             */
+            timerPencarian = setTimeout(
+                function () {
+
+                    fetch(
+                        `{{ route('pemesanan.cari-pelanggan') }}?q=${encodeURIComponent(keyword)}`,
+                        {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        }
+                    )
+                    .then(
+                        response => response.json()
+                    )
+                    .then(
+                        data => {
+
+                            hasilPelanggan.innerHTML =
+                                '';
+
+
+                            /*
+                             * Tidak ditemukan
+                             */
+                            if (data.length === 0) {
+
+                                hasilPelanggan.innerHTML = `
+                                    <div class="list-group-item text-muted">
+                                        Pelanggan tidak ditemukan
+                                    </div>
+                                `;
+
+                                hasilPelanggan.style.display =
+                                    'block';
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * Tampilkan hasil
+                             */
+                            data.forEach(
+                                function (pelanggan) {
+
+                                    const item =
+                                        document.createElement(
+                                            'button'
+                                        );
+
+                                    item.type =
+                                        'button';
+
+                                    item.className =
+                                        'list-group-item list-group-item-action';
+
+
+                                    item.innerHTML = `
+                                        <div>
+                                            <strong>
+                                                ${pelanggan.nama}
+                                            </strong>
+                                        </div>
+
+                                        <small class="text-muted">
+                                            ${pelanggan.nomor_hp ?? '-'}
+                                            • Stempel:
+                                            ${pelanggan.stempel ?? 0}
+                                        </small>
+                                    `;
+
+
+                                    /*
+                                     * Saat pelanggan dipilih
+                                     */
+                                    item.addEventListener(
+                                        'click',
+                                        function () {
+
+                                            namaPelangganInput.value =
+                                                pelanggan.nama;
+
+                                            idPelangganInput.value =
+                                                pelanggan.id_pelanggan;
+
+                                            jumlahStempel.textContent =
+                                                pelanggan.stempel ?? 0;
+
+
+                                            hasilPelanggan.innerHTML =
+                                                '';
+
+                                            hasilPelanggan.style.display =
+                                                'none';
+
+
+                                            cekSemuaReward();
+
+                                        }
+                                    );
+
+
+                                    hasilPelanggan.appendChild(
+                                        item
+                                    );
+
+                                }
+                            );
+
+
+                            hasilPelanggan.style.display =
+                                'block';
+
+                        }
+                    )
+                    .catch(
+                        error => {
+
+                            console.error(
+                                'Gagal mencari pelanggan:',
+                                error
+                            );
+
+                            hasilPelanggan.innerHTML = `
+                                <div class="list-group-item text-danger">
+                                    Gagal mencari pelanggan
+                                </div>
+                            `;
+
+                            hasilPelanggan.style.display =
+                                'block';
+
+                        }
+                    );
+
+                },
+                300
+            );
 
         }
     );
 
 
     /*
-    |--------------------------------------------------------------------------
-    | Tambah layanan
-    |--------------------------------------------------------------------------
-    */
+     * Tutup autocomplete kalau klik di luar
+     */
+    document.addEventListener(
+        'click',
+        function (event) {
+
+            if (
+                !namaPelangganInput.contains(
+                    event.target
+                ) &&
+                !hasilPelanggan.contains(
+                    event.target
+                )
+            ) {
+
+                hasilPelanggan.style.display =
+                    'none';
+
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       TAMBAH LAYANAN
+    ========================================================= */
 
     tombolTambah.addEventListener(
         'click',
@@ -546,6 +731,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const clone =
                 item.cloneNode(true);
 
+
             /*
              * Ganti index name
              */
@@ -555,10 +741,12 @@ document.addEventListener('DOMContentLoaded', function () {
             ).name =
                 `layanan[${indexLayanan}][id_layanan]`;
 
+
             clone.querySelector(
                 '.jumlah-input'
             ).name =
                 `layanan[${indexLayanan}][berat_jumlah]`;
+
 
             clone.querySelector(
                 '.reward-select'
@@ -574,17 +762,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 '.layanan-select'
             ).value = '';
 
+
             clone.querySelector(
                 '.jumlah-input'
             ).value = 1;
+
 
             clone.querySelector(
                 '.reward-select'
             ).value = '';
 
+
             clone.querySelector(
                 '.harga-normal'
             ).textContent = 'Rp 0';
+
 
             clone.querySelector(
                 '.subtotal-layanan'
@@ -611,11 +803,9 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Hapus layanan
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       HAPUS LAYANAN
+    ========================================================= */
 
     container.addEventListener(
         'click',
@@ -639,11 +829,9 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Perubahan layanan / jumlah / reward
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       PERUBAHAN LAYANAN / JUMLAH / REWARD
+    ========================================================= */
 
     container.addEventListener(
         'change',
@@ -699,17 +887,16 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Update satu layanan
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       UPDATE SATU LAYANAN
+    ========================================================= */
 
     function updateItem(item) {
 
         if (!item) {
             return;
         }
+
 
         const layananSelect =
             item.querySelector(
@@ -742,10 +929,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 layananSelect.selectedIndex
             ];
 
+
         const harga =
             Number(
-                option.dataset.harga || 0
+                option?.dataset.harga || 0
             );
+
 
         const jumlah =
             Number(
@@ -767,31 +956,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
         Array.from(
             rewardSelect.options
-        ).forEach(function (rewardOption) {
+        ).forEach(
+            function (rewardOption) {
 
-            if (!rewardOption.value) {
-                return;
+                if (!rewardOption.value) {
+                    return;
+                }
+
+                const idLayananReward =
+                    rewardOption.dataset.layanan;
+
+
+                if (
+                    idLayananReward ==
+                    layananSelect.value
+                ) {
+
+                    rewardOption.style.display =
+                        '';
+
+                } else {
+
+                    rewardOption.style.display =
+                        'none';
+
+                }
+
             }
-
-            const idLayananReward =
-                rewardOption.dataset.layanan;
-
-            if (
-                idLayananReward ==
-                layananSelect.value
-            ) {
-
-                rewardOption.style.display =
-                    '';
-
-            } else {
-
-                rewardOption.style.display =
-                    'none';
-
-            }
-
-        });
+        );
 
 
         /*
@@ -803,7 +995,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 rewardSelect.selectedIndex
             ];
 
+
         let pakaiReward = false;
+
 
         if (
             rewardOption &&
@@ -813,18 +1007,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const idLayananReward =
                 rewardOption.dataset.layanan;
 
+
             const kebutuhanStempel =
                 Number(
                     rewardOption.dataset.stempel || 0
                 );
 
+
             const stempelPelanggan =
                 Number(
-                    pelangganSelect
-                        .options[
-                            pelangganSelect.selectedIndex
-                        ]
-                        ?.dataset.stempel || 0
+                    jumlahStempel.textContent || 0
                 );
 
 
@@ -845,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
 
                 rewardSelect.value = '';
+
 
                 if (
                     stempelPelanggan <
@@ -868,6 +1061,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let subtotal = 0;
 
+
         if (pakaiReward) {
 
             /*
@@ -890,57 +1084,135 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cek semua reward
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       CEK SEMUA REWARD
+    ========================================================= */
 
     function cekSemuaReward() {
 
         document
             .querySelectorAll('.layanan-item')
-            .forEach(function (item) {
+            .forEach(
+                function (item) {
 
-                updateItem(item);
+                    updateItem(item);
 
-            });
+                }
+            );
 
         updateSemua();
 
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Update semua harga
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       UPDATE SEMUA HARGA
+    ========================================================= */
 
     function updateSemua() {
 
         let subtotalTotal = 0;
 
+
         document
             .querySelectorAll('.layanan-item')
-            .forEach(function (item) {
+            .forEach(
+                function (item) {
 
-                updateItem(item);
+                    updateItem(item);
 
-                const subtotalText =
-                    item.querySelector(
-                        '.subtotal-layanan'
-                    ).textContent;
 
-                const angka =
-                    subtotalText
-                        .replace('Rp ', '')
-                        .replace(/\./g, '');
+                    /*
+                     * Ambil harga dari data,
+                     * bukan dari teks Rupiah.
+                     */
 
-                subtotalTotal +=
-                    Number(angka) || 0;
+                    const layananSelect =
+                        item.querySelector(
+                            '.layanan-select'
+                        );
 
-            });
+                    const jumlahInput =
+                        item.querySelector(
+                            '.jumlah-input'
+                        );
+
+                    const rewardSelect =
+                        item.querySelector(
+                            '.reward-select'
+                        );
+
+
+                    const option =
+                        layananSelect.options[
+                            layananSelect.selectedIndex
+                        ];
+
+
+                    const harga =
+                        Number(
+                            option?.dataset.harga || 0
+                        );
+
+
+                    const jumlah =
+                        Number(
+                            jumlahInput.value || 0
+                        );
+
+
+                    const rewardOption =
+                        rewardSelect.options[
+                            rewardSelect.selectedIndex
+                        ];
+
+
+                    let subtotal = harga * jumlah;
+
+
+                    /*
+                     * Kalau menggunakan reward,
+                     * subtotal menjadi gratis.
+                     */
+
+                    if (
+                        rewardOption &&
+                        rewardOption.value
+                    ) {
+
+                        const kebutuhanStempel =
+                            Number(
+                                rewardOption.dataset.stempel || 0
+                            );
+
+                        const stempelPelanggan =
+                            Number(
+                                jumlahStempel.textContent || 0
+                            );
+
+                        const idLayananReward =
+                            rewardOption.dataset.layanan;
+
+
+                        if (
+                            idLayananReward ==
+                            layananSelect.value &&
+                            stempelPelanggan >=
+                            kebutuhanStempel
+                        ) {
+
+                            subtotal = 0;
+
+                        }
+
+                    }
+
+
+                    subtotalTotal +=
+                        subtotal;
+
+                }
+            );
 
 
         /*
@@ -951,6 +1223,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pengambilanSelect.options[
                 pengambilanSelect.selectedIndex
             ];
+
 
         const ongkir =
             Number(
@@ -975,10 +1248,12 @@ document.addEventListener('DOMContentLoaded', function () {
         ).textContent =
             rupiah(subtotalTotal);
 
+
         document.getElementById(
             'ongkir-text'
         ).textContent =
             rupiah(ongkir);
+
 
         document.getElementById(
             'total-text'
@@ -1005,11 +1280,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Perubahan pengambilan
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       PERUBAHAN PENGAMBILAN
+    ========================================================= */
 
     pengambilanSelect.addEventListener(
         'change',
@@ -1021,11 +1294,9 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Jalankan pertama kali
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       JALANKAN PERTAMA KALI
+    ========================================================= */
 
     updateSemua();
 
