@@ -4,7 +4,6 @@
 
 <div class="container py-4">
 
-```
 <div class="mb-4">
     <h2>Metode Pengambilan</h2>
 
@@ -106,7 +105,6 @@
 
     </div>
 </div>
-```
 
 </div>
 

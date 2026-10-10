@@ -4,7 +4,6 @@
 
 <div class="container py-4">
 
-```
 <div class="mb-4">
     <h2>Detail Layanan</h2>
 
@@ -136,7 +135,6 @@
 
     </div>
 </div>
-```
 
 </div>
 
