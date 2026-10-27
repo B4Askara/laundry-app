@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('content')
@@ -21,33 +22,39 @@
     <div class="card">
         <div class="card-body">
 
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nama</th>
-                        <th>No. HP</th>
-                        <th>Alamat</th>
-                    </tr>
-                </thead>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>No. HP</th>
+                            <th>Alamat</th>
+                            <th class="text-center">Stempel</th>
+                        </tr>
+                    </thead>
 
-                <tbody>
-                    @forelse($pelanggans as $pelanggan)
-                        <tr>
-                            <td>{{ $pelanggan->id_pelanggan }}</td>
-                            <td>{{ $pelanggan->nama }}</td>
-                            <td>{{ $pelanggan->no_hp }}</td>
-                            <td>{{ $pelanggan->alamat }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                Belum ada data pelanggan.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    <tbody>
+                        @forelse($pelanggans as $pelanggan)
+                            <tr>
+                                <td>{{ $pelanggan->id_pelanggan }}</td>
+                                <td>{{ $pelanggan->nama }}</td>
+                                <td>{{ $pelanggan->no_hp }}</td>
+                                <td>{{ $pelanggan->alamat }}</td>
+                                <td class="text-center">
+                                    {{ $pelanggan->stempel ?? 0 }} Stempel
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    Belum ada data pelanggan.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
         </div>
     </div>

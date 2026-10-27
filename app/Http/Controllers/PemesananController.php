@@ -14,22 +14,13 @@ use Illuminate\Support\Facades\DB;
 class PemesananController extends Controller
 {
     /**
-     * =========================================
-     * PEMESANAN
-     * =========================================
-     */
-
-    /**
      * Menampilkan halaman pertama alur pemesanan.
      */
     public function alurPelanggan()
     {
         $pelanggans = Pelanggan::orderBy('nama')->get();
 
-        return view(
-            'pemesanan.alur.pelanggan',
-            compact('pelanggans')
-        );
+        return view('pemesanan.alur.pelanggan', compact('pelanggans'));
     }
 
     /**
@@ -43,18 +34,14 @@ class PemesananController extends Controller
             return response()->json([]);
         }
 
-        $pelanggans = Pelanggan::where(
-            'nama',
-            'like',
-            '%' . $nama . '%'
-        )
+        $pelanggans = Pelanggan::where('nama', 'like', '%' . $nama . '%')
             ->limit(8)
             ->get([
                 'id_pelanggan',
                 'nama',
                 'no_hp',
                 'alamat',
-                'stempel'
+                'stempel',
             ]);
 
         return response()->json($pelanggans);
@@ -97,8 +84,7 @@ class PemesananController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('pemesanan.alur.layanan');
+        return redirect()->route('pemesanan.alur.layanan');
     }
 
     /**
@@ -107,12 +93,10 @@ class PemesananController extends Controller
     public function alurLayanan()
     {
         $layanans = Layanan::orderBy('nama_layanan')->get();
-
         $pelanggan = session('alur_pemesanan.pelanggan');
 
         if (!$pelanggan) {
-            return redirect()
-                ->route('pemesanan.alur.pelanggan');
+            return redirect()->route('pemesanan.alur.pelanggan');
         }
 
         return view(
@@ -144,11 +128,10 @@ class PemesananController extends Controller
                     'harga' => $layanan->harga,
                     'satuan' => $layanan->satuan,
                 ];
-            })->values()->toArray()
+            })->values()->toArray(),
         ]);
 
-        return redirect()
-            ->route('pemesanan.alur.detail');
+        return redirect()->route('pemesanan.alur.detail');
     }
 
     /**
@@ -160,13 +143,11 @@ class PemesananController extends Controller
         $layanans = session('alur_pemesanan.layanan');
 
         if (!$pelanggan) {
-            return redirect()
-                ->route('pemesanan.alur.pelanggan');
+            return redirect()->route('pemesanan.alur.pelanggan');
         }
 
         if (!$layanans) {
-            return redirect()
-                ->route('pemesanan.alur.layanan');
+            return redirect()->route('pemesanan.alur.layanan');
         }
 
         return view(
@@ -189,14 +170,10 @@ class PemesananController extends Controller
         $detailLayanan = [];
 
         foreach ($request->layanan as $item) {
-
-            $layanan = Layanan::findOrFail(
-                $item['id_layanan']
-            );
+            $layanan = Layanan::findOrFail($item['id_layanan']);
 
             $beratJumlah = (float) $item['berat_jumlah'];
             $harga = (float) $layanan->harga;
-            $subtotal = $harga * $beratJumlah;
 
             $detailLayanan[] = [
                 'id_layanan' => $layanan->id_layanan,
@@ -204,15 +181,398 @@ class PemesananController extends Controller
                 'harga' => $harga,
                 'satuan' => $layanan->satuan,
                 'berat_jumlah' => $beratJumlah,
-                'subtotal' => $subtotal,
+                'subtotal' => $harga * $beratJumlah,
             ];
         }
 
         session([
-            'alur_pemesanan.detail_layanan' => $detailLayanan
+            'alur_pemesanan.detail_layanan' => $detailLayanan,
         ]);
 
         return redirect()->route('pemesanan.alur.pengambilan');
+    }
+
+    /**
+     * Menampilkan halaman metode pengambilan.
+     */
+    public function alurPengambilan()
+    {
+        $pelanggan = session('alur_pemesanan.pelanggan');
+        $detailLayanan = session('alur_pemesanan.detail_layanan');
+
+        if (!$pelanggan) {
+            return redirect()->route('pemesanan.alur.pelanggan');
+        }
+
+        if (empty($detailLayanan)) {
+            return redirect()->route('pemesanan.alur.detail');
+        }
+
+        $pengambilans = Pengambilan::all();
+
+        return view(
+            'pemesanan.alur.pengambilan',
+            compact('pelanggan', 'detailLayanan', 'pengambilans')
+        );
+    }
+
+    /**
+     * Menyimpan metode pengambilan.
+     */
+    public function simpanPengambilanAlur(Request $request)
+    {
+        $request->validate([
+            'id_pengambilan' => 'required|exists:pengambilans,id_pengambilan',
+        ]);
+
+        $pengambilan = Pengambilan::findOrFail(
+            $request->id_pengambilan
+        );
+
+        session([
+            'alur_pemesanan.pengambilan' => [
+                'id_pengambilan' => $pengambilan->id_pengambilan,
+                'metode' => $pengambilan->metode,
+                'ongkir' => $pengambilan->ongkir,
+            ],
+        ]);
+
+        return redirect()->route('pemesanan.alur.poin');
+    }
+
+    /**
+     * Menampilkan halaman poin / stempel.
+     */
+    public function alurPoin()
+    {
+        $pelanggan = session('alur_pemesanan.pelanggan');
+        $detailLayanan = session('alur_pemesanan.detail_layanan');
+        $pengambilan = session('alur_pemesanan.pengambilan');
+
+        if (!$pelanggan) {
+            return redirect()->route('pemesanan.alur.pelanggan');
+        }
+
+        if (empty($detailLayanan)) {
+            return redirect()->route('pemesanan.alur.detail');
+        }
+
+        if (!$pengambilan) {
+            return redirect()->route('pemesanan.alur.pengambilan');
+        }
+
+        return view(
+            'pemesanan.alur.poin',
+            compact('pelanggan', 'detailLayanan', 'pengambilan')
+        );
+    }
+
+    /**
+     * Menampilkan halaman pilih reward.
+     */
+    public function alurReward()
+    {
+        $pelanggan = session('alur_pemesanan.pelanggan');
+        $detailLayanan = session('alur_pemesanan.detail_layanan');
+        $pengambilan = session('alur_pemesanan.pengambilan');
+
+        if (!$pelanggan) {
+            return redirect()->route('pemesanan.alur.pelanggan');
+        }
+
+        if (empty($detailLayanan)) {
+            return redirect()->route('pemesanan.alur.detail');
+        }
+
+        if (!$pengambilan) {
+            return redirect()->route('pemesanan.alur.pengambilan');
+        }
+
+        $rewards = Reward::with('layanan')
+            ->orderBy('minimal_stempel')
+            ->get();
+
+        return view(
+            'pemesanan.alur.reward',
+            compact('pelanggan', 'detailLayanan', 'pengambilan', 'rewards')
+        );
+    }
+
+    /**
+     * Menyimpan pilihan reward.
+     */
+    public function simpanRewardAlur(Request $request)
+    {
+        $request->validate([
+            'id_reward' => 'nullable|exists:rewards,id_reward',
+        ]);
+
+        $idReward = $request->id_reward;
+
+        if ($idReward) {
+            $reward = Reward::with('layanan')->findOrFail($idReward);
+
+            $pelanggan = session('alur_pemesanan.pelanggan');
+            $detailLayanan = session('alur_pemesanan.detail_layanan', []);
+
+            if (!$pelanggan || empty($detailLayanan)) {
+                return redirect()->route('pemesanan.alur.pelanggan');
+            }
+
+            $layananCocok = collect($detailLayanan)->contains(
+                fn ($layanan) =>
+                    (int) $layanan['id_layanan'] ===
+                    (int) $reward->id_layanan
+            );
+
+            if (!$layananCocok) {
+                return back()->with(
+                    'error',
+                    'Reward ini tidak sesuai dengan layanan yang dipilih.'
+                );
+            }
+
+            if ((int) $pelanggan['stempel'] < (int) $reward->minimal_stempel) {
+                return back()->with(
+                    'error',
+                    'Stempel pelanggan belum mencukupi untuk reward ini.'
+                );
+            }
+
+            session([
+                'alur_pemesanan.reward' => [
+                    'id_reward' => $reward->id_reward,
+                    'nama_reward' => $reward->nama_reward,
+                    'minimal_stempel' => $reward->minimal_stempel,
+                    'id_layanan' => $reward->id_layanan,
+                ],
+            ]);
+        } else {
+            session([
+                'alur_pemesanan.reward' => null,
+            ]);
+        }
+
+        return redirect()->route('pemesanan.alur.ringkasan');
+    }
+
+    /**
+     * Menampilkan ringkasan pesanan sebelum pembayaran.
+     */
+    public function alurRingkasan()
+    {
+        $pelanggan = session('alur_pemesanan.pelanggan');
+        $detailLayanan = session('alur_pemesanan.detail_layanan');
+        $pengambilan = session('alur_pemesanan.pengambilan');
+        $reward = session('alur_pemesanan.reward');
+
+        if (!$pelanggan) {
+            return redirect()->route('pemesanan.alur.pelanggan');
+        }
+
+        if (empty($detailLayanan)) {
+            return redirect()->route('pemesanan.alur.layanan');
+        }
+
+        if (!$pengambilan) {
+            return redirect()->route('pemesanan.alur.pengambilan');
+        }
+
+        $subtotal = 0;
+        $rewardSudahDiterapkan = false;
+
+        foreach ($detailLayanan as &$detail) {
+            $detail['subtotal'] =
+                (float) $detail['harga'] *
+                (float) $detail['berat_jumlah'];
+
+            $detail['pakai_reward'] = false;
+
+            if (
+                $reward &&
+                !$rewardSudahDiterapkan &&
+                (int) $detail['id_layanan'] === (int) $reward['id_layanan']
+            ) {
+                $detail['subtotal'] = 0;
+                $detail['pakai_reward'] = true;
+                $rewardSudahDiterapkan = true;
+            }
+
+            $subtotal += $detail['subtotal'];
+        }
+
+        unset($detail);
+
+        $ongkir = (float) ($pengambilan['ongkir'] ?? 0);
+        $totalHarga = $subtotal + $ongkir;
+
+        return view(
+            'pemesanan.alur.ringkasan',
+            compact(
+                'pelanggan',
+                'detailLayanan',
+                'pengambilan',
+                'reward',
+                'subtotal',
+                'ongkir',
+                'totalHarga'
+            )
+        );
+    }
+
+    /**
+     * Mengonfirmasi dan menyimpan pesanan ke database.
+     */
+    public function konfirmasiAlur()
+    {
+        $pelangganData = session('alur_pemesanan.pelanggan');
+        $detailLayanan = session('alur_pemesanan.detail_layanan');
+        $pengambilanData = session('alur_pemesanan.pengambilan');
+        $rewardData = session('alur_pemesanan.reward');
+
+        if (!$pelangganData) {
+            return redirect()->route('pemesanan.alur.pelanggan');
+        }
+
+        if (empty($detailLayanan)) {
+            return redirect()->route('pemesanan.alur.layanan');
+        }
+
+        if (!$pengambilanData) {
+            return redirect()->route('pemesanan.alur.pengambilan');
+        }
+
+        $pemesanan = DB::transaction(function () use (
+            $pelangganData,
+            $detailLayanan,
+            $pengambilanData,
+            $rewardData
+        ) {
+            if (!empty($pelangganData['id_pelanggan'])) {
+                $pelanggan = Pelanggan::where(
+                    'id_pelanggan',
+                    $pelangganData['id_pelanggan']
+                )->lockForUpdate()->firstOrFail();
+            } else {
+                $pelanggan = new Pelanggan();
+                $pelanggan->nama = $pelangganData['nama'];
+                $pelanggan->no_hp = $pelangganData['no_hp'];
+                $pelanggan->alamat = $pelangganData['alamat'];
+                $pelanggan->stempel = 0;
+                $pelanggan->save();
+            }
+
+            $pengambilan = Pengambilan::findOrFail(
+                $pengambilanData['id_pengambilan']
+            );
+
+            $reward = null;
+
+            if ($rewardData) {
+                $reward = Reward::findOrFail($rewardData['id_reward']);
+
+                $layananCocok = collect($detailLayanan)->contains(
+                    fn ($detail) =>
+                        (int) $detail['id_layanan'] ===
+                        (int) $reward->id_layanan
+                );
+
+                if (!$layananCocok) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'reward' => 'Reward tidak sesuai dengan layanan pesanan.',
+                    ]);
+                }
+
+                if ((int) $pelanggan->stempel < (int) $reward->minimal_stempel) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'reward' => 'Stempel pelanggan tidak mencukupi untuk reward.',
+                    ]);
+                }
+            }
+
+            $layananPertama = Layanan::findOrFail(
+                $detailLayanan[0]['id_layanan']
+            );
+
+            $subtotal = 0;
+            $totalBeratJumlah = 0;
+            $rewardSudahDiterapkan = false;
+
+            foreach ($detailLayanan as $detail) {
+                $layanan = Layanan::findOrFail($detail['id_layanan']);
+
+                $beratJumlah = (float) $detail['berat_jumlah'];
+                $harga = (float) $layanan->harga;
+                $subtotalLayanan = $harga * $beratJumlah;
+
+                $pakaiReward = $reward &&
+                    !$rewardSudahDiterapkan &&
+                    (int) $reward->id_layanan === (int) $layanan->id_layanan;
+
+                if ($pakaiReward) {
+                    $subtotalLayanan = 0;
+                    $rewardSudahDiterapkan = true;
+                }
+
+                $subtotal += $subtotalLayanan;
+                $totalBeratJumlah += $beratJumlah;
+            }
+
+            $ongkir = (float) $pengambilan->ongkir;
+
+            $pemesanan = Pemesanan::create([
+                'id_user' => auth()->id(),
+                'id_pelanggan' => $pelanggan->id_pelanggan,
+                'id_layanan' => $layananPertama->id_layanan,
+                'id_pengambilan' => $pengambilan->id_pengambilan,
+                'id_reward' => null,
+                'berat_jumlah' => $totalBeratJumlah,
+                'subtotal' => $subtotal,
+                'ongkir' => $ongkir,
+                'total_harga' => $subtotal + $ongkir,
+                'tanggal' => now()->toDateString(),
+            ]);
+
+            $rewardSudahDiterapkan = false;
+
+            foreach ($detailLayanan as $detail) {
+                $layanan = Layanan::findOrFail($detail['id_layanan']);
+
+                $beratJumlah = (float) $detail['berat_jumlah'];
+                $harga = (float) $layanan->harga;
+                $subtotalLayanan = $harga * $beratJumlah;
+
+                $pakaiReward = $reward &&
+                    !$rewardSudahDiterapkan &&
+                    (int) $reward->id_layanan === (int) $layanan->id_layanan;
+
+                if ($pakaiReward) {
+                    $subtotalLayanan = 0;
+                    $rewardSudahDiterapkan = true;
+                }
+
+                DetailPemesanan::create([
+                    'id_pemesanan' => $pemesanan->id_pemesanan,
+                    'id_layanan' => $layanan->id_layanan,
+                    'id_reward' => $pakaiReward ? $reward->id_reward : null,
+                    'berat_jumlah' => $beratJumlah,
+                    'harga' => $harga,
+                    'subtotal' => $subtotalLayanan,
+                    'pakai_reward' => (bool) $pakaiReward,
+                ]);
+            }
+
+            return $pemesanan;
+        });
+
+        session()->forget('alur_pemesanan');
+
+        return redirect()
+            ->route('pembayaran.create', $pemesanan->id_pemesanan)
+            ->with(
+                'success',
+                'Pesanan berhasil dikonfirmasi. Silakan lakukan pembayaran.'
+            );
     }
 
     /**
@@ -226,15 +586,12 @@ class PemesananController extends Controller
             'pengambilan',
             'reward',
             'detailPemesanan.layanan',
-            'pembayaran'
+            'pembayaran',
         ])
             ->latest()
             ->get();
 
-        return view(
-            'pemesanan.index',
-            compact('pemesanans')
-        );
+        return view('pemesanan.index', compact('pemesanans'));
     }
 
     /**
@@ -249,17 +606,12 @@ class PemesananController extends Controller
 
         return view(
             'pemesanan.create',
-            compact(
-                'pelanggans',
-                'layanans',
-                'pengambilans',
-                'rewards'
-            )
+            compact('pelanggans', 'layanans', 'pengambilans', 'rewards')
         );
     }
 
     /**
-     * Menyimpan pemesanan baru.
+     * Menyimpan pemesanan melalui form lama.
      */
     public function store(Request $request)
     {
@@ -274,10 +626,7 @@ class PemesananController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-
-            $pelanggan = Pelanggan::findOrFail(
-                $request->id_pelanggan
-            );
+            $pelanggan = Pelanggan::findOrFail($request->id_pelanggan);
 
             $pengambilan = Pengambilan::findOrFail(
                 $request->id_pengambilan
@@ -304,40 +653,31 @@ class PemesananController extends Controller
             $totalBeratJumlah = 0;
 
             foreach ($request->layanan as $item) {
-
-                $layanan = Layanan::findOrFail(
-                    $item['id_layanan']
-                );
-
+                $layanan = Layanan::findOrFail($item['id_layanan']);
                 $beratJumlah = (float) $item['berat_jumlah'];
                 $harga = (float) $layanan->harga;
-
                 $subtotalLayanan = $harga * $beratJumlah;
 
                 $pakaiReward = false;
                 $reward = null;
 
                 if (!empty($item['id_reward'])) {
-
                     $reward = Reward::with('layanan')
                         ->findOrFail($item['id_reward']);
 
-                    if ($reward->id_layanan == $layanan->id_layanan) {
-
-                        if ($pelanggan->stempel >= $reward->minimal_stempel) {
-
-                            $pakaiReward = true;
-                            $subtotalLayanan = 0;
-                        }
+                    if (
+                        $reward->id_layanan == $layanan->id_layanan &&
+                        $pelanggan->stempel >= $reward->minimal_stempel
+                    ) {
+                        $pakaiReward = true;
+                        $subtotalLayanan = 0;
                     }
                 }
 
                 DetailPemesanan::create([
                     'id_pemesanan' => $pemesanan->id_pemesanan,
                     'id_layanan' => $layanan->id_layanan,
-                    'id_reward' => $pakaiReward
-                        ? $reward->id_reward
-                        : null,
+                    'id_reward' => $pakaiReward ? $reward->id_reward : null,
                     'berat_jumlah' => $beratJumlah,
                     'harga' => $harga,
                     'subtotal' => $subtotalLayanan,
@@ -348,23 +688,19 @@ class PemesananController extends Controller
                 $totalBeratJumlah += $beratJumlah;
             }
 
-            $ongkir = $pengambilan->ongkir;
-            $totalHarga = $subtotal + $ongkir;
+            $ongkir = (float) $pengambilan->ongkir;
 
             $pemesanan->update([
                 'berat_jumlah' => $totalBeratJumlah,
                 'subtotal' => $subtotal,
                 'ongkir' => $ongkir,
-                'total_harga' => $totalHarga,
+                'total_harga' => $subtotal + $ongkir,
             ]);
         });
 
         return redirect()
             ->route('pemesanan.index')
-            ->with(
-                'success',
-                'Pemesanan berhasil disimpan.'
-            );
+            ->with('success', 'Pemesanan berhasil disimpan.');
     }
 
     /**
@@ -376,13 +712,10 @@ class PemesananController extends Controller
             'pelanggan',
             'pengambilan',
             'detailPemesanan.layanan',
-            'pembayaran'
+            'pembayaran',
         ])->findOrFail($id);
 
-        return view(
-            'pemesanan.show',
-            compact('pemesanan')
-        );
+        return view('pemesanan.show', compact('pemesanan'));
     }
 
     /**
@@ -390,9 +723,7 @@ class PemesananController extends Controller
      */
     public function edit(string $id)
     {
-        $pemesanan = Pemesanan::with(
-            'detailPemesanan'
-        )->findOrFail($id);
+        $pemesanan = Pemesanan::with('detailPemesanan')->findOrFail($id);
 
         $pelanggans = Pelanggan::all();
         $layanans = Layanan::all();
@@ -401,23 +732,15 @@ class PemesananController extends Controller
 
         return view(
             'pemesanan.edit',
-            compact(
-                'pemesanan',
-                'layanans',
-                'pelanggans',
-                'pengambilans',
-                'rewards'
-            )
+            compact('pemesanan', 'layanans', 'pelanggans', 'pengambilans', 'rewards')
         );
     }
 
     /**
      * Mengupdate pemesanan.
      */
-    public function update(
-        Request $request,
-        string $id
-    ) {
+    public function update(Request $request, string $id)
+    {
         return redirect()
             ->route('pemesanan.index')
             ->with(
@@ -432,196 +755,10 @@ class PemesananController extends Controller
     public function destroy(string $id)
     {
         $pemesanan = Pemesanan::findOrFail($id);
-
         $pemesanan->delete();
 
         return redirect()
             ->route('pemesanan.index')
-            ->with(
-                'success',
-                'Pemesanan berhasil dihapus.'
-            );
-    }
-
-    /**
-     * Menampilkan halaman metode pengambilan.
-     */
-    public function alurPengambilan()
-    {
-        $pelanggan = session('alur_pemesanan.pelanggan');
-        $detailLayanan = session('alur_pemesanan.detail_layanan');
-
-        if (!$pelanggan) {
-            return redirect()->route('pemesanan.alur.pelanggan');
-        }
-
-        if (!$detailLayanan) {
-            return redirect()->route('pemesanan.alur.detail');
-        }
-
-        $pengambilans = Pengambilan::all();
-
-        return view(
-            'pemesanan.alur.pengambilan',
-            compact(
-                'pelanggan',
-                'detailLayanan',
-                'pengambilans'
-            )
-        );
-    }
-
-    /**
-     * Menyimpan metode pengambilan.
-     */
-    public function simpanPengambilanAlur(Request $request)
-    {
-        $request->validate([
-            'id_pengambilan' => 'required|exists:pengambilans,id_pengambilan',
-        ]);
-
-        $pengambilan = Pengambilan::findOrFail(
-            $request->id_pengambilan
-        );
-
-        session([
-            'alur_pemesanan.pengambilan' => [
-                'id_pengambilan' => $pengambilan->id_pengambilan,
-                'metode' => $pengambilan->metode,
-                'ongkir' => $pengambilan->ongkir,
-            ]
-        ]);
-
-        return redirect()->route('pemesanan.alur.poin');
-    }
-
-    /**
-     * Menampilkan halaman poin / stempel.
-     */
-    public function alurPoin()
-    {
-        $pelanggan = session('alur_pemesanan.pelanggan');
-        $detailLayanan = session('alur_pemesanan.detail_layanan');
-        $pengambilan = session('alur_pemesanan.pengambilan');
-
-        if (!$pelanggan) {
-            return redirect()->route('pemesanan.alur.pelanggan');
-        }
-
-        if (!$detailLayanan) {
-            return redirect()->route('pemesanan.alur.detail');
-        }
-
-        if (!$pengambilan) {
-            return redirect()->route('pemesanan.alur.pengambilan');
-        }
-
-        return view(
-            'pemesanan.alur.poin',
-            compact(
-                'pelanggan',
-                'detailLayanan',
-                'pengambilan'
-            )
-        );
-    }
-
-    /**
-     * Menampilkan halaman pilih reward.
-     */
-    public function alurReward()
-    {
-        $pelanggan = session('alur_pemesanan.pelanggan');
-        $detailLayanan = session('alur_pemesanan.detail_layanan');
-        $pengambilan = session('alur_pemesanan.pengambilan');
-
-        if (!$pelanggan) {
-            return redirect()->route('pemesanan.alur.pelanggan');
-        }
-
-        if (!$detailLayanan) {
-            return redirect()->route('pemesanan.alur.detail');
-        }
-
-        if (!$pengambilan) {
-            return redirect()->route('pemesanan.alur.pengambilan');
-        }
-
-        $rewards = Reward::with('layanan')
-            ->orderBy('minimal_stempel')
-            ->get();
-
-        return view(
-            'pemesanan.alur.reward',
-            compact(
-                'pelanggan',
-                'detailLayanan',
-                'pengambilan',
-                'rewards'
-            )
-        );
-    }
-
-    /**
-     * Menyimpan pilihan reward.
-     */
-    public function simpanRewardAlur(Request $request)
-    {
-        $request->validate([
-            'id_reward' => 'nullable|exists:rewards,id_reward',
-        ]);
-
-        $idReward = $request->id_reward;
-
-        if ($idReward) {
-
-            $reward = Reward::with('layanan')
-                ->findOrFail($idReward);
-
-            $pelanggan = session('alur_pemesanan.pelanggan');
-            $detailLayanan = session('alur_pemesanan.detail_layanan');
-
-            $layananCocok = false;
-
-            foreach ($detailLayanan as $layanan) {
-
-                if ($layanan['id_layanan'] == $reward->id_layanan) {
-                    $layananCocok = true;
-                    break;
-                }
-            }
-
-            if (!$layananCocok) {
-                return back()->with(
-                    'error',
-                    'Reward ini tidak sesuai dengan layanan yang dipilih.'
-                );
-            }
-
-            if ($pelanggan['stempel'] < $reward->minimal_stempel) {
-                return back()->with(
-                    'error',
-                    'Stempel pelanggan belum mencukupi untuk reward ini.'
-                );
-            }
-
-            session([
-                'alur_pemesanan.reward' => [
-                    'id_reward' => $reward->id_reward,
-                    'nama_reward' => $reward->nama_reward,
-                    'minimal_stempel' => $reward->minimal_stempel,
-                    'id_layanan' => $reward->id_layanan,
-                ]
-            ]);
-
-        } else {
-
-            session([
-                'alur_pemesanan.reward' => null
-            ]);
-
-        }
-
-        return redirect()->route('pemesanan.alur.ringkasan');
+            ->with('success', 'Pemesanan berhasil dihapus.');
     }
 }
