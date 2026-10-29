@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('content')
@@ -15,6 +16,12 @@
     </div>
 @endif
 
+@if(session('error'))
+    <div class="alert alert-danger">
+        {{ session('error') }}
+    </div>
+@endif
+
 <div class="transaction-card">
 
     <div class="transaction-title">
@@ -22,9 +29,7 @@
     </div>
 
     <div class="table-responsive">
-
         <table class="transaction-table">
-
             <thead>
                 <tr>
                     <th>No</th>
@@ -37,14 +42,9 @@
             </thead>
 
             <tbody>
-
                 @forelse($pemesanans as $pemesanan)
-
                     <tr>
-
-                        <td>
-                            {{ $loop->iteration }}
-                        </td>
+                        <td>{{ $loop->iteration }}</td>
 
                         <td>
                             <strong>
@@ -53,15 +53,14 @@
                         </td>
 
                         <td>
-                            {{ $pemesanan->tanggal }}
+                            {{ $pemesanan->tanggal ?? '-' }}
                         </td>
 
                         <td>
-                            Rp {{ number_format($pemesanan->total_harga, 0, ',', '.') }}
+                            Rp {{ number_format($pemesanan->total_harga ?? 0, 0, ',', '.') }}
                         </td>
 
                         <td>
-
                             @if($pemesanan->pembayaran)
                                 <span class="status-selesai">
                                     Sudah Dibayar
@@ -71,57 +70,43 @@
                                     Belum Dibayar
                                 </span>
                             @endif
-
                         </td>
 
                         <td>
-
                             @if(!$pemesanan->pembayaran)
-
-                                <a href="{{ route('pembayaran.create', $pemesanan->id_pemesanan) }}"
-                                    class="btn btn-sm btn-primary">
+                                <a
+                                    href="{{ route('pembayaran.create', $pemesanan->id_pemesanan) }}"
+                                    class="btn btn-sm btn-primary"
+                                >
                                     <i class="bi bi-credit-card"></i>
                                     Bayar
                                 </a>
-
                             @else
-
-                                <button class="btn btn-sm btn-success" disabled>
-                                    <i class="bi bi-check-lg"></i>
-                                    Lunas
-                                </button>
-
+                                <a
+                                    href="{{ route('pembayaran.struk', $pemesanan->id_pemesanan) }}"
+                                    class="btn btn-sm btn-success"
+                                >
+                                    <i class="bi bi-receipt"></i>
+                                    Lihat Struk
+                                </a>
                             @endif
-
                         </td>
-
                     </tr>
-
                 @empty
-
                     <tr>
-
                         <td colspan="6" class="text-center py-5">
-
                             <div class="text-muted mb-2">
-                                <i class="bi bi-receipt"
-                                   style="font-size: 35px;"></i>
+                                <i class="bi bi-receipt" style="font-size: 35px;"></i>
                             </div>
 
                             <div class="text-muted">
                                 Belum ada transaksi.
                             </div>
-
                         </td>
-
                     </tr>
-
                 @endforelse
-
             </tbody>
-
         </table>
-
     </div>
 
 </div>

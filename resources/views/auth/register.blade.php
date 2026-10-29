@@ -1,77 +1,182 @@
-@extends('layouts.app')
 
-@section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Register') }}</div>
+<!DOCTYPE html>
+<html lang="id">
 
-                <div class="card-body">
-                    <form method="POST" action="{{ route('register') }}">
-                        @csrf
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-                        <div class="row mb-3">
-                            <label for="name" class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
+    <title>Register - Laundry</title>
 
-                            <div class="col-md-6">
-                                <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
+    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+</head>
 
-                                @error('name')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
+<body class="login-page">
+
+    <div class="login-container">
+
+        <!-- BAGIAN KIRI -->
+        <div class="login-left">
+            <img
+                src="{{ asset('image/laundry-login.png') }}"
+                alt="Laundry"
+                class="login-logo"
+            >
+        </div>
+
+        <!-- BAGIAN KANAN -->
+        <div class="login-right">
+
+            <div class="login-form-container">
+
+                <h1>Register</h1>
+
+                <p class="login-subtitle">
+                    Buat akun untuk memulai usaha laundry
+                </p>
+
+                @if ($errors->any())
+                    <div class="login-error">
+                        @foreach ($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('register') }}">
+                    @csrf
+
+                    <!-- NAMA LENGKAP -->
+                    <div class="login-input-group">
+                        <label for="name">Nama Lengkap</label>
+
+                        <input
+                            id="name"
+                            type="text"
+                            name="name"
+                            value="{{ old('name') }}"
+                            placeholder="Masukkan nama lengkap"
+                            required
+                            autocomplete="name"
+                            autofocus
+                        >
+                    </div>
+
+                    <!-- NAMA LAUNDRY -->
+                    <div class="login-input-group">
+                        <label for="nama_laundry">Nama Laundry</label>
+
+                        <input
+                            id="nama_laundry"
+                            type="text"
+                            name="nama_laundry"
+                            value="{{ old('nama_laundry') }}"
+                            placeholder="Contoh: Laundry Bersih"
+                            maxlength="255"
+                            required
+                        >
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div class="login-input-group">
+                        <label for="email">Email</label>
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value="{{ old('email') }}"
+                            placeholder="Masukkan email aktif"
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+
+                    <!-- PASSWORD -->
+                    <div class="login-input-group">
+                        <label for="password">Password</label>
+
+                        <div class="password-wrapper">
+                            <input
+                                id="password"
+                                type="password"
+                                name="password"
+                                placeholder="Buat password"
+                                required
+                                minlength="8"
+                                autocomplete="new-password"
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                onclick="togglePassword('password', 'eye-icon-password')"
+                            >
+                                <span id="eye-icon-password">◉</span>
+                            </button>
                         </div>
+                    </div>
 
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
+                    <!-- KONFIRMASI PASSWORD -->
+                    <div class="login-input-group">
+                        <label for="password-confirm">
+                            Konfirmasi Password
+                        </label>
 
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
+                        <div class="password-wrapper">
+                            <input
+                                id="password-confirm"
+                                type="password"
+                                name="password_confirmation"
+                                placeholder="Ulangi password"
+                                required
+                                minlength="8"
+                                autocomplete="new-password"
+                            >
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                onclick="togglePassword('password-confirm', 'eye-icon-confirm')"
+                            >
+                                <span id="eye-icon-confirm">◉</span>
+                            </button>
                         </div>
+                    </div>
 
-                        <div class="row mb-3">
-                            <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
+                    <!-- LINK LOGIN -->
+                    <div class="register-link">
+                        Sudah punya akun?
+                        <a href="{{ route('login') }}">Login</a>
+                    </div>
 
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                    <!-- TOMBOL DAFTAR -->
+                    <button type="submit" class="login-button">
+                        DAFTAR SEKARANG
+                    </button>
 
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
+                </form>
 
-                        <div class="row mb-3">
-                            <label for="password-confirm" class="col-md-4 col-form-label text-md-end">{{ __('Confirm Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
-                            <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Register') }}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
             </div>
         </div>
+
     </div>
-</div>
-@endsection
+
+    <script>
+        function togglePassword(inputId, iconId) {
+            const password = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+
+            if (password.type === 'password') {
+                password.type = 'text';
+                icon.textContent = '◎';
+            } else {
+                password.type = 'password';
+                icon.textContent = '◉';
+            }
+        }
+    </script>
+
+</body>
+</html>

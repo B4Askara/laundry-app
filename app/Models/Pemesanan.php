@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Pelanggan;
 use App\Models\Layanan;
 use App\Models\Pengambilan;
@@ -20,6 +21,7 @@ class Pemesanan extends Model
     protected $primaryKey = 'id_pemesanan';
 
     protected $fillable = [
+        'laundry_id',
         'id_user',
         'id_pelanggan',
         'id_layanan',
@@ -31,6 +33,11 @@ class Pemesanan extends Model
         'total_harga',
         'tanggal',
     ];
+
+    public function laundry(): BelongsTo
+    {
+        return $this->belongsTo(Laundry::class, 'laundry_id');
+    }
 
     public function pelanggan()
     {
@@ -77,7 +84,6 @@ class Pemesanan extends Model
         );
     }
 
-    // Relasi ke detail pemesanan
     public function details()
     {
         return $this->hasMany(
@@ -87,7 +93,6 @@ class Pemesanan extends Model
         );
     }
 
-    // Relasi ke pembayaran
     public function pembayaran()
     {
         return $this->hasOne(

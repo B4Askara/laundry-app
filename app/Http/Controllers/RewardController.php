@@ -5,15 +5,31 @@ namespace App\Http\Controllers;
 use App\Models\Reward;
 use App\Models\Layanan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class RewardController extends Controller
 {
     /**
-     * Menampilkan semua reward.
+     * Mengambil ID laundry akun yang sedang login.
+     */
+    private function laundryId(): int
+    {
+        $laundryId = Auth::user()->laundry_id;
+
+        abort_if(!$laundryId, 403, 'Akun belum terhubung ke laundry.');
+
+        return (int) $laundryId;
+    }
+
+    /**
+     * Menampilkan reward milik laundry sendiri.
      */
     public function index()
     {
-        $rewards = Reward::with('layanan')->get();
+        $rewards = Reward::where('laundry_id', $this->laundryId())
+            ->with('layanan')
+            ->get();
 
         return view('reward.index', compact('rewards'));
     }
@@ -23,7 +39,9 @@ class RewardController extends Controller
      */
     public function create()
     {
-        $layanans = Layanan::all();
+        $layanans = Layanan::where('laundry_id', $this->laundryId())
+            ->orderBy('nama_layanan')
+            ->get();
 
         return view('reward.create', compact('layanans'));
     }
@@ -33,14 +51,21 @@ class RewardController extends Controller
      */
     public function store(Request $request)
     {
+        $laundryId = $this->laundryId();
+
         $request->validate([
-            'id_layanan' => 'required|exists:layanans,id_layanan',
+            'id_layanan' => [
+                'required',
+                Rule::exists('layanans', 'id_layanan')
+                    ->where('laundry_id', $laundryId),
+            ],
             'nama_reward' => 'required|string|max:255',
             'minimal_stempel' => 'required|integer|min:1',
             'keterangan' => 'nullable|string',
         ]);
 
         Reward::create([
+            'laundry_id' => $laundryId,
             'id_layanan' => $request->id_layanan,
             'nama_reward' => $request->nama_reward,
             'minimal_stempel' => $request->minimal_stempel,
@@ -53,25 +78,40 @@ class RewardController extends Controller
     }
 
     /**
-     * Form edit reward.
+     * Form edit reward milik laundry sendiri.
      */
     public function edit(Reward $reward)
     {
-        $layanans = Layanan::all();
+        abort_unless(
+            (int) $reward->laundry_id === $this->laundryId(),
+            404
+        );
 
-        return view('reward.edit', compact(
-            'reward',
-            'layanans'
-        ));
+        $layanans = Layanan::where('laundry_id', $this->laundryId())
+            ->orderBy('nama_layanan')
+            ->get();
+
+        return view('reward.edit', compact('reward', 'layanans'));
     }
 
     /**
-     * Mengupdate reward.
+     * Memperbarui reward milik laundry sendiri.
      */
     public function update(Request $request, Reward $reward)
     {
+        $laundryId = $this->laundryId();
+
+        abort_unless(
+            (int) $reward->laundry_id === $laundryId,
+            404
+        );
+
         $request->validate([
-            'id_layanan' => 'required|exists:layanans,id_layanan',
+            'id_layanan' => [
+                'required',
+                Rule::exists('layanans', 'id_layanan')
+                    ->where('laundry_id', $laundryId),
+            ],
             'nama_reward' => 'required|string|max:255',
             'minimal_stempel' => 'required|integer|min:1',
             'keterangan' => 'nullable|string',
@@ -90,10 +130,15 @@ class RewardController extends Controller
     }
 
     /**
-     * Menghapus reward.
+     * Menghapus reward milik laundry sendiri.
      */
     public function destroy(Reward $reward)
     {
+        abort_unless(
+            (int) $reward->laundry_id === $this->laundryId(),
+            404
+        );
+
         $reward->delete();
 
         return redirect()

@@ -10,21 +10,36 @@ use App\Models\Pengambilan;
 use App\Models\Reward;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PemesananController extends Controller
 {
     /**
-     * Menampilkan halaman pertama alur pemesanan.
+     * Mengambil ID laundry akun yang sedang login.
+     */
+    private function laundryId(): int
+    {
+        $laundryId = auth()->user()?->laundry_id;
+
+        abort_if(!$laundryId, 403, 'Akun belum terhubung ke laundry.');
+
+        return (int) $laundryId;
+    }
+
+    /**
+     * Halaman pertama alur pemesanan.
      */
     public function alurPelanggan()
     {
-        $pelanggans = Pelanggan::orderBy('nama')->get();
+        $pelanggans = Pelanggan::where('laundry_id', $this->laundryId())
+            ->orderBy('nama')
+            ->get();
 
         return view('pemesanan.alur.pelanggan', compact('pelanggans'));
     }
 
     /**
-     * Mencari pelanggan untuk autocomplete.
+     * Autocomplete pelanggan milik laundry sendiri.
      */
     public function cariPelanggan(Request $request)
     {
@@ -34,7 +49,9 @@ class PemesananController extends Controller
             return response()->json([]);
         }
 
-        $pelanggans = Pelanggan::where('nama', 'like', '%' . $nama . '%')
+        $pelanggans = Pelanggan::where('laundry_id', $this->laundryId())
+            ->where('nama', 'like', '%' . $nama . '%')
+            ->orderBy('nama')
             ->limit(8)
             ->get([
                 'id_pelanggan',
@@ -48,20 +65,24 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menyimpan sementara data pelanggan untuk alur pemesanan.
+     * Menyimpan sementara pilihan pelanggan.
      */
     public function simpanPelangganAlur(Request $request)
     {
         $request->validate([
+            'id_pelanggan' => 'nullable|integer',
             'nama' => 'required|string|max:255',
             'no_hp' => 'required|string|max:20',
             'alamat' => 'required|string',
         ]);
 
-        $idPelanggan = $request->id_pelanggan;
+        $laundryId = $this->laundryId();
+        $idPelanggan = $request->input('id_pelanggan');
 
         if ($idPelanggan) {
-            $pelanggan = Pelanggan::findOrFail($idPelanggan);
+            $pelanggan = Pelanggan::where('laundry_id', $laundryId)
+                ->where('id_pelanggan', $idPelanggan)
+                ->firstOrFail();
 
             session([
                 'alur_pemesanan.pelanggan' => [
@@ -88,37 +109,48 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menampilkan halaman pilih jenis pelayanan.
+     * Halaman pilih layanan.
      */
     public function alurLayanan()
     {
-        $layanans = Layanan::orderBy('nama_layanan')->get();
         $pelanggan = session('alur_pemesanan.pelanggan');
 
         if (!$pelanggan) {
             return redirect()->route('pemesanan.alur.pelanggan');
         }
 
-        return view(
-            'pemesanan.alur.layanan',
-            compact('layanans', 'pelanggan')
-        );
+        $layanans = Layanan::where('laundry_id', $this->laundryId())
+            ->orderBy('nama_layanan')
+            ->get();
+
+        return view('pemesanan.alur.layanan', compact('layanans', 'pelanggan'));
     }
 
     /**
-     * Menyimpan pilihan layanan untuk alur pemesanan.
+     * Menyimpan pilihan layanan.
      */
     public function simpanLayananAlur(Request $request)
     {
+        $laundryId = $this->laundryId();
+
         $request->validate([
             'layanan' => 'required|array|min:1',
-            'layanan.*' => 'exists:layanans,id_layanan',
+            'layanan.*' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('layanans', 'id_layanan')
+                    ->where('laundry_id', $laundryId),
+            ],
         ]);
 
-        $layanans = Layanan::whereIn(
-            'id_layanan',
-            $request->layanan
-        )->get();
+        $layanans = Layanan::where('laundry_id', $laundryId)
+            ->whereIn('id_layanan', $request->layanan)
+            ->get();
+
+        if ($layanans->count() !== count($request->layanan)) {
+            abort(422, 'Ada layanan yang tidak valid.');
+        }
 
         session([
             'alur_pemesanan.layanan' => $layanans->map(function ($layanan) {
@@ -131,11 +163,17 @@ class PemesananController extends Controller
             })->values()->toArray(),
         ]);
 
+        session()->forget([
+            'alur_pemesanan.detail_layanan',
+            'alur_pemesanan.pengambilan',
+            'alur_pemesanan.reward',
+        ]);
+
         return redirect()->route('pemesanan.alur.detail');
     }
 
     /**
-     * Menampilkan halaman detail layanan.
+     * Halaman detail layanan.
      */
     public function alurDetail()
     {
@@ -150,27 +188,33 @@ class PemesananController extends Controller
             return redirect()->route('pemesanan.alur.layanan');
         }
 
-        return view(
-            'pemesanan.alur.detail',
-            compact('pelanggan', 'layanans')
-        );
+        return view('pemesanan.alur.detail', compact('pelanggan', 'layanans'));
     }
 
     /**
-     * Menyimpan detail layanan untuk alur pemesanan.
+     * Menyimpan berat atau jumlah layanan.
      */
     public function simpanDetailAlur(Request $request)
     {
+        $laundryId = $this->laundryId();
+
         $request->validate([
             'layanan' => 'required|array|min:1',
-            'layanan.*.id_layanan' => 'required|exists:layanans,id_layanan',
+            'layanan.*.id_layanan' => [
+                'required',
+                'integer',
+                Rule::exists('layanans', 'id_layanan')
+                    ->where('laundry_id', $laundryId),
+            ],
             'layanan.*.berat_jumlah' => 'required|numeric|min:0.01',
         ]);
 
         $detailLayanan = [];
 
         foreach ($request->layanan as $item) {
-            $layanan = Layanan::findOrFail($item['id_layanan']);
+            $layanan = Layanan::where('laundry_id', $laundryId)
+                ->where('id_layanan', $item['id_layanan'])
+                ->firstOrFail();
 
             $beratJumlah = (float) $item['berat_jumlah'];
             $harga = (float) $layanan->harga;
@@ -189,11 +233,16 @@ class PemesananController extends Controller
             'alur_pemesanan.detail_layanan' => $detailLayanan,
         ]);
 
+        session()->forget([
+            'alur_pemesanan.pengambilan',
+            'alur_pemesanan.reward',
+        ]);
+
         return redirect()->route('pemesanan.alur.pengambilan');
     }
 
     /**
-     * Menampilkan halaman metode pengambilan.
+     * Halaman metode pengambilan.
      */
     public function alurPengambilan()
     {
@@ -225,9 +274,7 @@ class PemesananController extends Controller
             'id_pengambilan' => 'required|exists:pengambilans,id_pengambilan',
         ]);
 
-        $pengambilan = Pengambilan::findOrFail(
-            $request->id_pengambilan
-        );
+        $pengambilan = Pengambilan::findOrFail($request->id_pengambilan);
 
         session([
             'alur_pemesanan.pengambilan' => [
@@ -237,11 +284,13 @@ class PemesananController extends Controller
             ],
         ]);
 
+        session()->forget('alur_pemesanan.reward');
+
         return redirect()->route('pemesanan.alur.poin');
     }
 
     /**
-     * Menampilkan halaman poin / stempel.
+     * Halaman poin atau stempel.
      */
     public function alurPoin()
     {
@@ -268,7 +317,7 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menampilkan halaman pilih reward.
+     * Halaman pilih reward milik laundry sendiri.
      */
     public function alurReward()
     {
@@ -288,7 +337,8 @@ class PemesananController extends Controller
             return redirect()->route('pemesanan.alur.pengambilan');
         }
 
-        $rewards = Reward::with('layanan')
+        $rewards = Reward::where('laundry_id', $this->laundryId())
+            ->with('layanan')
             ->orderBy('minimal_stempel')
             ->get();
 
@@ -303,14 +353,24 @@ class PemesananController extends Controller
      */
     public function simpanRewardAlur(Request $request)
     {
+        $laundryId = $this->laundryId();
+
         $request->validate([
-            'id_reward' => 'nullable|exists:rewards,id_reward',
+            'id_reward' => [
+                'nullable',
+                'integer',
+                Rule::exists('rewards', 'id_reward')
+                    ->where('laundry_id', $laundryId),
+            ],
         ]);
 
-        $idReward = $request->id_reward;
+        $idReward = $request->input('id_reward');
 
         if ($idReward) {
-            $reward = Reward::with('layanan')->findOrFail($idReward);
+            $reward = Reward::where('laundry_id', $laundryId)
+                ->with('layanan')
+                ->where('id_reward', $idReward)
+                ->firstOrFail();
 
             $pelanggan = session('alur_pemesanan.pelanggan');
             $detailLayanan = session('alur_pemesanan.detail_layanan', []);
@@ -320,9 +380,8 @@ class PemesananController extends Controller
             }
 
             $layananCocok = collect($detailLayanan)->contains(
-                fn ($layanan) =>
-                    (int) $layanan['id_layanan'] ===
-                    (int) $reward->id_layanan
+                fn ($detail) =>
+                    (int) $detail['id_layanan'] === (int) $reward->id_layanan
             );
 
             if (!$layananCocok) {
@@ -348,16 +407,14 @@ class PemesananController extends Controller
                 ],
             ]);
         } else {
-            session([
-                'alur_pemesanan.reward' => null,
-            ]);
+            session(['alur_pemesanan.reward' => null]);
         }
 
         return redirect()->route('pemesanan.alur.ringkasan');
     }
 
     /**
-     * Menampilkan ringkasan pesanan sebelum pembayaran.
+     * Ringkasan pesanan sebelum pembayaran.
      */
     public function alurRingkasan()
     {
@@ -383,8 +440,7 @@ class PemesananController extends Controller
 
         foreach ($detailLayanan as &$detail) {
             $detail['subtotal'] =
-                (float) $detail['harga'] *
-                (float) $detail['berat_jumlah'];
+                (float) $detail['harga'] * (float) $detail['berat_jumlah'];
 
             $detail['pakai_reward'] = false;
 
@@ -421,7 +477,7 @@ class PemesananController extends Controller
     }
 
     /**
-     * Mengonfirmasi dan menyimpan pesanan ke database.
+     * Konfirmasi dan simpan pesanan.
      */
     public function konfirmasiAlur()
     {
@@ -442,24 +498,28 @@ class PemesananController extends Controller
             return redirect()->route('pemesanan.alur.pengambilan');
         }
 
+        $laundryId = $this->laundryId();
+
         $pemesanan = DB::transaction(function () use (
             $pelangganData,
             $detailLayanan,
             $pengambilanData,
-            $rewardData
+            $rewardData,
+            $laundryId
         ) {
             if (!empty($pelangganData['id_pelanggan'])) {
-                $pelanggan = Pelanggan::where(
-                    'id_pelanggan',
-                    $pelangganData['id_pelanggan']
-                )->lockForUpdate()->firstOrFail();
+                $pelanggan = Pelanggan::where('laundry_id', $laundryId)
+                    ->where('id_pelanggan', $pelangganData['id_pelanggan'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
             } else {
-                $pelanggan = new Pelanggan();
-                $pelanggan->nama = $pelangganData['nama'];
-                $pelanggan->no_hp = $pelangganData['no_hp'];
-                $pelanggan->alamat = $pelangganData['alamat'];
-                $pelanggan->stempel = 0;
-                $pelanggan->save();
+                $pelanggan = Pelanggan::create([
+                    'laundry_id' => $laundryId,
+                    'nama' => $pelangganData['nama'],
+                    'no_hp' => $pelangganData['no_hp'],
+                    'alamat' => $pelangganData['alamat'],
+                    'stempel' => 0,
+                ]);
             }
 
             $pengambilan = Pengambilan::findOrFail(
@@ -469,12 +529,13 @@ class PemesananController extends Controller
             $reward = null;
 
             if ($rewardData) {
-                $reward = Reward::findOrFail($rewardData['id_reward']);
+                $reward = Reward::where('laundry_id', $laundryId)
+                    ->where('id_reward', $rewardData['id_reward'])
+                    ->firstOrFail();
 
                 $layananCocok = collect($detailLayanan)->contains(
                     fn ($detail) =>
-                        (int) $detail['id_layanan'] ===
-                        (int) $reward->id_layanan
+                        (int) $detail['id_layanan'] === (int) $reward->id_layanan
                 );
 
                 if (!$layananCocok) {
@@ -490,18 +551,29 @@ class PemesananController extends Controller
                 }
             }
 
-            $layananPertama = Layanan::findOrFail(
-                $detailLayanan[0]['id_layanan']
-            );
-
+            $layananPertama = null;
             $subtotal = 0;
             $totalBeratJumlah = 0;
             $rewardSudahDiterapkan = false;
+            $detailTersimpan = [];
 
             foreach ($detailLayanan as $detail) {
-                $layanan = Layanan::findOrFail($detail['id_layanan']);
+                $layanan = Layanan::where('laundry_id', $laundryId)
+                    ->where('id_layanan', $detail['id_layanan'])
+                    ->firstOrFail();
+
+                if (!$layananPertama) {
+                    $layananPertama = $layanan;
+                }
 
                 $beratJumlah = (float) $detail['berat_jumlah'];
+
+                if ($beratJumlah <= 0) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'layanan' => 'Berat atau jumlah layanan harus lebih dari nol.',
+                    ]);
+                }
+
                 $harga = (float) $layanan->harga;
                 $subtotalLayanan = $harga * $beratJumlah;
 
@@ -516,11 +588,33 @@ class PemesananController extends Controller
 
                 $subtotal += $subtotalLayanan;
                 $totalBeratJumlah += $beratJumlah;
+
+                $detailTersimpan[] = [
+                    'id_layanan' => $layanan->id_layanan,
+                    'id_reward' => $pakaiReward ? $reward->id_reward : null,
+                    'berat_jumlah' => $beratJumlah,
+                    'harga' => $harga,
+                    'subtotal' => $subtotalLayanan,
+                    'pakai_reward' => (bool) $pakaiReward,
+                ];
+            }
+
+            if (!$layananPertama) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'layanan' => 'Pilih minimal satu layanan.',
+                ]);
+            }
+
+            if ($reward && !$rewardSudahDiterapkan) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'reward' => 'Layanan untuk reward tidak ditemukan dalam pesanan.',
+                ]);
             }
 
             $ongkir = (float) $pengambilan->ongkir;
 
             $pemesanan = Pemesanan::create([
+                'laundry_id' => $laundryId,
                 'id_user' => auth()->id(),
                 'id_pelanggan' => $pelanggan->id_pelanggan,
                 'id_layanan' => $layananPertama->id_layanan,
@@ -533,33 +627,9 @@ class PemesananController extends Controller
                 'tanggal' => now()->toDateString(),
             ]);
 
-            $rewardSudahDiterapkan = false;
-
-            foreach ($detailLayanan as $detail) {
-                $layanan = Layanan::findOrFail($detail['id_layanan']);
-
-                $beratJumlah = (float) $detail['berat_jumlah'];
-                $harga = (float) $layanan->harga;
-                $subtotalLayanan = $harga * $beratJumlah;
-
-                $pakaiReward = $reward &&
-                    !$rewardSudahDiterapkan &&
-                    (int) $reward->id_layanan === (int) $layanan->id_layanan;
-
-                if ($pakaiReward) {
-                    $subtotalLayanan = 0;
-                    $rewardSudahDiterapkan = true;
-                }
-
-                DetailPemesanan::create([
-                    'id_pemesanan' => $pemesanan->id_pemesanan,
-                    'id_layanan' => $layanan->id_layanan,
-                    'id_reward' => $pakaiReward ? $reward->id_reward : null,
-                    'berat_jumlah' => $beratJumlah,
-                    'harga' => $harga,
-                    'subtotal' => $subtotalLayanan,
-                    'pakai_reward' => (bool) $pakaiReward,
-                ]);
+            foreach ($detailTersimpan as $detail) {
+                $detail['id_pemesanan'] = $pemesanan->id_pemesanan;
+                DetailPemesanan::create($detail);
             }
 
             return $pemesanan;
@@ -576,18 +646,19 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menampilkan halaman daftar pemesanan.
+     * Daftar pesanan milik laundry sendiri.
      */
     public function index()
     {
-        $pemesanans = Pemesanan::with([
-            'pelanggan',
-            'layanan',
-            'pengambilan',
-            'reward',
-            'detailPemesanan.layanan',
-            'pembayaran',
-        ])
+        $pemesanans = Pemesanan::where('laundry_id', $this->laundryId())
+            ->with([
+                'pelanggan',
+                'layanan',
+                'pengambilan',
+                'reward',
+                'detailPemesanan.layanan',
+                'pembayaran',
+            ])
             ->latest()
             ->get();
 
@@ -595,14 +666,19 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menampilkan form tambah pemesanan.
+     * Form tambah pesanan.
      */
     public function create()
     {
-        $pelanggans = Pelanggan::all();
-        $layanans = Layanan::all();
+        $laundryId = $this->laundryId();
+
+        $pelanggans = Pelanggan::where('laundry_id', $laundryId)->get();
+        $layanans = Layanan::where('laundry_id', $laundryId)->get();
         $pengambilans = Pengambilan::all();
-        $rewards = Reward::with('layanan')->get();
+
+        $rewards = Reward::where('laundry_id', $laundryId)
+            ->with('layanan')
+            ->get();
 
         return view(
             'pemesanan.create',
@@ -611,91 +687,117 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menyimpan pemesanan melalui form lama.
+     * Menyimpan pesanan melalui form lama.
      */
     public function store(Request $request)
     {
+        $laundryId = $this->laundryId();
+
         $request->validate([
-            'id_pelanggan' => 'required|exists:pelanggans,id_pelanggan',
+            'id_pelanggan' => [
+                'required',
+                'integer',
+                Rule::exists('pelanggans', 'id_pelanggan')
+                    ->where('laundry_id', $laundryId),
+            ],
             'id_pengambilan' => 'required|exists:pengambilans,id_pengambilan',
             'tanggal' => 'required|date',
             'layanan' => 'required|array|min:1',
-            'layanan.*.id_layanan' => 'required|exists:layanans,id_layanan',
+            'layanan.*.id_layanan' => [
+                'required',
+                'integer',
+                Rule::exists('layanans', 'id_layanan')
+                    ->where('laundry_id', $laundryId),
+            ],
             'layanan.*.berat_jumlah' => 'required|numeric|min:0.01',
-            'layanan.*.id_reward' => 'nullable|exists:rewards,id_reward',
+            'layanan.*.id_reward' => [
+                'nullable',
+                'integer',
+                Rule::exists('rewards', 'id_reward')
+                    ->where('laundry_id', $laundryId),
+            ],
         ]);
 
-        DB::transaction(function () use ($request) {
-            $pelanggan = Pelanggan::findOrFail($request->id_pelanggan);
+        DB::transaction(function () use ($request, $laundryId) {
+            $pelanggan = Pelanggan::where('laundry_id', $laundryId)
+                ->where('id_pelanggan', $request->id_pelanggan)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             $pengambilan = Pengambilan::findOrFail(
                 $request->id_pengambilan
             );
 
-            $layananPertama = Layanan::findOrFail(
-                $request->layanan[0]['id_layanan']
-            );
-
-            $pemesanan = Pemesanan::create([
-                'id_user' => auth()->id(),
-                'id_pelanggan' => $request->id_pelanggan,
-                'id_layanan' => $layananPertama->id_layanan,
-                'id_pengambilan' => $request->id_pengambilan,
-                'id_reward' => null,
-                'berat_jumlah' => 0,
-                'subtotal' => 0,
-                'ongkir' => $pengambilan->ongkir,
-                'total_harga' => 0,
-                'tanggal' => $request->tanggal,
-            ]);
-
             $subtotal = 0;
             $totalBeratJumlah = 0;
+            $layananPertama = null;
+            $detailTersimpan = [];
+            $rewardSudahDiterapkan = false;
 
             foreach ($request->layanan as $item) {
-                $layanan = Layanan::findOrFail($item['id_layanan']);
+                $layanan = Layanan::where('laundry_id', $laundryId)
+                    ->where('id_layanan', $item['id_layanan'])
+                    ->firstOrFail();
+
+                if (!$layananPertama) {
+                    $layananPertama = $layanan;
+                }
+
                 $beratJumlah = (float) $item['berat_jumlah'];
                 $harga = (float) $layanan->harga;
                 $subtotalLayanan = $harga * $beratJumlah;
-
-                $pakaiReward = false;
                 $reward = null;
+                $pakaiReward = false;
 
                 if (!empty($item['id_reward'])) {
-                    $reward = Reward::with('layanan')
-                        ->findOrFail($item['id_reward']);
+                    $reward = Reward::where('laundry_id', $laundryId)
+                        ->where('id_reward', $item['id_reward'])
+                        ->firstOrFail();
 
                     if (
-                        $reward->id_layanan == $layanan->id_layanan &&
-                        $pelanggan->stempel >= $reward->minimal_stempel
+                        !$rewardSudahDiterapkan &&
+                        (int) $reward->id_layanan === (int) $layanan->id_layanan &&
+                        (int) $pelanggan->stempel >= (int) $reward->minimal_stempel
                     ) {
                         $pakaiReward = true;
+                        $rewardSudahDiterapkan = true;
                         $subtotalLayanan = 0;
                     }
                 }
 
-                DetailPemesanan::create([
-                    'id_pemesanan' => $pemesanan->id_pemesanan,
+                $subtotal += $subtotalLayanan;
+                $totalBeratJumlah += $beratJumlah;
+
+                $detailTersimpan[] = [
                     'id_layanan' => $layanan->id_layanan,
                     'id_reward' => $pakaiReward ? $reward->id_reward : null,
                     'berat_jumlah' => $beratJumlah,
                     'harga' => $harga,
                     'subtotal' => $subtotalLayanan,
                     'pakai_reward' => $pakaiReward,
-                ]);
-
-                $subtotal += $subtotalLayanan;
-                $totalBeratJumlah += $beratJumlah;
+                ];
             }
 
             $ongkir = (float) $pengambilan->ongkir;
 
-            $pemesanan->update([
+            $pemesanan = Pemesanan::create([
+                'laundry_id' => $laundryId,
+                'id_user' => auth()->id(),
+                'id_pelanggan' => $pelanggan->id_pelanggan,
+                'id_layanan' => $layananPertama->id_layanan,
+                'id_pengambilan' => $pengambilan->id_pengambilan,
+                'id_reward' => null,
                 'berat_jumlah' => $totalBeratJumlah,
                 'subtotal' => $subtotal,
                 'ongkir' => $ongkir,
                 'total_harga' => $subtotal + $ongkir,
+                'tanggal' => $request->tanggal,
             ]);
+
+            foreach ($detailTersimpan as $detail) {
+                $detail['id_pemesanan'] = $pemesanan->id_pemesanan;
+                DetailPemesanan::create($detail);
+            }
         });
 
         return redirect()
@@ -704,31 +806,44 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menampilkan detail pemesanan.
+     * Detail pesanan. Pesanan laundry lain menghasilkan 404.
      */
     public function show(string $id)
     {
-        $pemesanan = Pemesanan::with([
-            'pelanggan',
-            'pengambilan',
-            'detailPemesanan.layanan',
-            'pembayaran',
-        ])->findOrFail($id);
+        $pemesanan = Pemesanan::where('laundry_id', $this->laundryId())
+            ->with([
+                'pelanggan',
+                'layanan',
+                'reward',
+                'pengambilan',
+                'detailPemesanan.layanan',
+                'pembayaran',
+            ])
+            ->where('id_pemesanan', $id)
+            ->firstOrFail();
 
         return view('pemesanan.show', compact('pemesanan'));
     }
 
     /**
-     * Menampilkan form edit pemesanan.
+     * Form edit pesanan.
      */
     public function edit(string $id)
     {
-        $pemesanan = Pemesanan::with('detailPemesanan')->findOrFail($id);
+        $laundryId = $this->laundryId();
 
-        $pelanggans = Pelanggan::all();
-        $layanans = Layanan::all();
+        $pemesanan = Pemesanan::where('laundry_id', $laundryId)
+            ->with('detailPemesanan')
+            ->where('id_pemesanan', $id)
+            ->firstOrFail();
+
+        $pelanggans = Pelanggan::where('laundry_id', $laundryId)->get();
+        $layanans = Layanan::where('laundry_id', $laundryId)->get();
         $pengambilans = Pengambilan::all();
-        $rewards = Reward::with('layanan')->get();
+
+        $rewards = Reward::where('laundry_id', $laundryId)
+            ->with('layanan')
+            ->get();
 
         return view(
             'pemesanan.edit',
@@ -737,10 +852,14 @@ class PemesananController extends Controller
     }
 
     /**
-     * Mengupdate pemesanan.
+     * Fitur edit lama belum diimplementasikan.
      */
     public function update(Request $request, string $id)
     {
+        Pemesanan::where('laundry_id', $this->laundryId())
+            ->where('id_pemesanan', $id)
+            ->firstOrFail();
+
         return redirect()
             ->route('pemesanan.index')
             ->with(
@@ -750,11 +869,14 @@ class PemesananController extends Controller
     }
 
     /**
-     * Menghapus pemesanan.
+     * Menghapus pesanan milik laundry sendiri.
      */
     public function destroy(string $id)
     {
-        $pemesanan = Pemesanan::findOrFail($id);
+        $pemesanan = Pemesanan::where('laundry_id', $this->laundryId())
+            ->where('id_pemesanan', $id)
+            ->firstOrFail();
+
         $pemesanan->delete();
 
         return redirect()

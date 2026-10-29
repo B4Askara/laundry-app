@@ -1,26 +1,52 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\LayananController;
 use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\RewardController;
 use App\Http\Controllers\PembayaranController;
+use App\Http\Controllers\PengaturanController;
+
+// =========================================
+// HALAMAN AWAL
+// =========================================
 
 Route::get('/', function () {
-    return view('welcome');
+    if (Auth::check()) {
+        return redirect()->route('home');
+    }
+
+    return redirect()->route('login');
 });
+
+// =========================================
+// AUTHENTICATION: LOGIN, REGISTER, LOGOUT
+// =========================================
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])
-    ->name('home');
+// =========================================
+// DASHBOARD
+// =========================================
 
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])
+    ->name('home')
+    ->middleware('auth');
+
+// =========================================
 // DATA PELANGGAN
+// =========================================
+
 Route::resource('pelanggan', PelangganController::class)
     ->middleware('auth');
 
+// =========================================
 // DATA LAYANAN
+// =========================================
+
 Route::resource('layanan', LayananController::class)
     ->middleware('auth');
 
@@ -111,7 +137,10 @@ Route::post('/pemesanan/alur/konfirmasi', [
 Route::resource('pemesanan', PemesananController::class)
     ->middleware('auth');
 
+// =========================================
 // DATA REWARD
+// =========================================
+
 Route::resource('reward', RewardController::class)
     ->middleware('auth');
 
@@ -133,3 +162,26 @@ Route::post('/pembayaran/{id}/bayar', [
     PembayaranController::class,
     'store'
 ])->name('pembayaran.store')->middleware('auth');
+
+// =========================================
+// CETAK STRUK
+// =========================================
+
+Route::get('/pemesanan/{id}/struk', [
+    PembayaranController::class,
+    'struk'
+])->name('pembayaran.struk')->middleware('auth');
+
+// =========================================
+// PENGATURAN LAUNDRY
+// =========================================
+
+Route::get('/pengaturan', [
+    PengaturanController::class,
+    'index'
+])->name('pengaturan.index')->middleware('auth');
+
+Route::put('/pengaturan', [
+    PengaturanController::class,
+    'update'
+])->name('pengaturan.update')->middleware('auth');
