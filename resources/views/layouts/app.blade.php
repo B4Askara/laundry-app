@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -25,10 +24,21 @@
 <div class="dashboard-wrapper">
 
     {{-- SIDEBAR --}}
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
 
-        {{-- TOMBOL TOGGLE SIDEBAR --}}
-        <button type="button" class="sidebar-toggle" id="sidebarToggle">
+        {{-- TOMBOL TOGGLE SIDEBAR DESKTOP --}}
+        <button type="button"
+                class="sidebar-toggle"
+                id="sidebarToggle"
+                aria-label="Kecilkan atau besarkan sidebar">
+            <i class="bi bi-list"></i>
+        </button>
+
+        {{-- TOMBOL GARIS TIGA HP DAN TABLET --}}
+        <button type="button"
+                class="mobile-sidebar-close"
+                id="mobileSidebarClose"
+                aria-label="Tutup menu">
             <i class="bi bi-list"></i>
         </button>
 
@@ -40,42 +50,42 @@
 
             {{-- DASHBOARD --}}
             <a href="{{ route('home') }}"
-                class="sidebar-item {{ request()->routeIs('home') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('home') ? 'active' : '' }}">
                 <i class="bi bi-house-fill"></i>
                 <span>Dashboard</span>
             </a>
 
             {{-- PEMESANAN --}}
             <a href="{{ route('pemesanan.index') }}"
-                class="sidebar-item {{ request()->routeIs('pemesanan.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('pemesanan.*') ? 'active' : '' }}">
                 <i class="bi bi-basket-fill"></i>
                 <span>Pemesanan</span>
             </a>
 
             {{-- PELANGGAN --}}
             <a href="{{ route('pelanggan.index') }}"
-                class="sidebar-item {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('pelanggan.*') ? 'active' : '' }}">
                 <i class="bi bi-people-fill"></i>
                 <span>Pelanggan</span>
             </a>
 
             {{-- LAYANAN --}}
             <a href="{{ route('layanan.index') }}"
-                class="sidebar-item {{ request()->routeIs('layanan.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('layanan.*') ? 'active' : '' }}">
                 <i class="bi bi-droplet-fill"></i>
                 <span>Layanan</span>
             </a>
 
             {{-- TRANSAKSI --}}
             <a href="{{ route('pembayaran.index') }}"
-                class="sidebar-item {{ request()->routeIs('pembayaran.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('pembayaran.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i>
                 <span>Transaksi</span>
             </a>
 
             {{-- REWARD --}}
             <a href="{{ route('reward.index') }}"
-                class="sidebar-item {{ request()->routeIs('reward.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('reward.*') ? 'active' : '' }}">
                 <i class="bi bi-ticket-perforated-fill"></i>
                 <span>Reward Stempel</span>
             </a>
@@ -88,7 +98,7 @@
 
             {{-- PENGATURAN --}}
             <a href="{{ route('pengaturan.index') }}"
-                class="sidebar-item {{ request()->routeIs('pengaturan.*') ? 'active' : '' }}">
+               class="sidebar-item {{ request()->routeIs('pengaturan.*') ? 'active' : '' }}">
                 <i class="bi bi-gear-fill"></i>
                 <span>Pengaturan</span>
             </a>
@@ -106,14 +116,25 @@
         </nav>
     </aside>
 
+    {{-- OVERLAY SIDEBAR MOBILE --}}
+    <button type="button"
+            class="sidebar-overlay"
+            id="sidebarOverlay"
+            aria-label="Tutup menu"></button>
+
     {{-- BAGIAN KANAN --}}
     <div class="dashboard-main">
 
         {{-- TOPBAR --}}
         <header class="dashboard-topbar">
 
-            {{-- TOMBOL SIDEBAR --}}
-            <button type="button" class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+            {{-- TOMBOL SIDEBAR TABLET DAN HP --}}
+            <button type="button"
+                    class="mobile-sidebar-toggle"
+                    id="mobileSidebarToggle"
+                    aria-label="Buka menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
                 <i class="bi bi-list"></i>
             </button>
 

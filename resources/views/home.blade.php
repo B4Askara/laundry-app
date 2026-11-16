@@ -1,9 +1,9 @@
+
 @extends('layouts.app')
 
 @section('content')
 
 <div class="dashboard-header">
-
     <div>
         <h1>Selamat Datang 👋</h1>
         <p>Berikut ringkasan hari ini.</p>
@@ -13,16 +13,15 @@
         <i class="bi bi-plus-lg"></i>
         Pemesanan baru
     </a>
-
 </div>
-
 
 {{-- STATISTIK --}}
 <div class="dashboard-stats">
 
+    {{-- TOTAL TRANSAKSI --}}
     <div class="stat-card">
         <div class="stat-number stat-green">
-            28
+            {{ $totalTransaksi }}
         </div>
 
         <div class="stat-title">
@@ -34,22 +33,22 @@
         </div>
     </div>
 
-
+    {{-- TOTAL PEMASUKAN --}}
     <div class="stat-card">
         <div class="stat-number stat-orange">
-            Rp. 2.350.000
+            Rp{{ number_format($totalPemasukan, 0, ',', '.') }}
         </div>
 
         <div class="stat-title">
-            Total Pemasukkan
+            Total Pemasukan
         </div>
 
         <div class="stat-subtitle">
-            Hari ini
+            Pembayaran hari ini
         </div>
     </div>
 
-
+    {{-- TOTAL PELANGGAN --}}
     <div class="stat-card">
         <div class="stat-number stat-blue">
             {{ $totalPelanggan }}
@@ -64,8 +63,22 @@
         </div>
     </div>
 
-</div>
+    {{-- REWARD DITUKAR --}}
+    <div class="stat-card">
+        <div class="stat-number stat-blue">
+            {{ $rewardDitukar }}
+        </div>
 
+        <div class="stat-title">
+            Reward Ditukar
+        </div>
+
+        <div class="stat-subtitle">
+            Hari ini
+        </div>
+    </div>
+
+</div>
 
 {{-- RIWAYAT TRANSAKSI --}}
 <div class="transaction-card">
@@ -99,14 +112,12 @@
                             {{ $loop->iteration }}
                         </td>
 
-
                         {{-- NAMA PELANGGAN --}}
                         <td>
                             <strong>
                                 {{ $pemesanan->pelanggan->nama ?? '-' }}
                             </strong>
                         </td>
-
 
                         {{-- LAYANAN --}}
                         <td>
@@ -127,12 +138,10 @@
 
                         </td>
 
-
                         {{-- TOTAL --}}
                         <td>
                             Rp{{ number_format($pemesanan->total_harga, 0, ',', '.') }}
                         </td>
-
 
                         {{-- STATUS --}}
                         <td>

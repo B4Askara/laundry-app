@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Pelanggan;
 use App\Models\Pemesanan;
+use App\Models\Pembayaran;
+use App\Models\DetailPemesanan;
+use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
@@ -25,11 +28,50 @@ class HomeController extends Controller
             'Akun belum terhubung ke laundry.'
         );
 
-        // Total pelanggan laundry sendiri.
+        $awalHari = Carbon::today();
+        $akhirHari = Carbon::tomorrow();
+
+        // Total pelanggan milik laundry yang login.
         $totalPelanggan = Pelanggan::where(
             'laundry_id',
             $laundryId
         )->count();
+
+        // Total pesanan yang dibuat hari ini.
+        $totalTransaksi = Pemesanan::where(
+            'laundry_id',
+            $laundryId
+        )
+            ->where('tanggal', '>=', $awalHari)
+            ->where('tanggal', '<', $akhirHari)
+            ->count();
+
+        // Total uang dari pembayaran yang berhasil hari ini.
+        $totalPemasukan = Pembayaran::whereHas(
+            'pemesanan',
+            function ($query) use ($laundryId) {
+                $query->where('laundry_id', $laundryId);
+            }
+        )
+            ->where('tanggal_pembayaran', '>=', $awalHari)
+            ->where('tanggal_pembayaran', '<', $akhirHari)
+            ->sum('jumlah_bayar');
+
+        // Total detail layanan yang menggunakan reward hari ini.
+        $rewardDitukar = DetailPemesanan::where(
+            'pakai_reward',
+            true
+        )
+            ->whereHas('pemesanan', function ($query) use (
+                $laundryId,
+                $awalHari,
+                $akhirHari
+            ) {
+                $query->where('laundry_id', $laundryId)
+                    ->where('tanggal', '>=', $awalHari)
+                    ->where('tanggal', '<', $akhirHari);
+            })
+            ->count();
 
         // Lima transaksi terbaru yang sudah dibayar.
         $transaksiTerbaru = Pemesanan::where(
@@ -48,6 +90,9 @@ class HomeController extends Controller
 
         return view('home', compact(
             'totalPelanggan',
+            'totalTransaksi',
+            'totalPemasukan',
+            'rewardDitukar',
             'transaksiTerbaru'
         ));
     }
