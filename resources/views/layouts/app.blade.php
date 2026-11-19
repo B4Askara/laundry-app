@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -91,7 +92,8 @@
             </a>
 
             {{-- LAPORAN --}}
-            <a href="#" class="sidebar-item">
+            <a href="{{ route('laporan.index') }}"
+               class="sidebar-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
                 <i class="bi bi-bar-chart-fill"></i>
                 <span>Laporan</span>
             </a>

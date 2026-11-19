@@ -9,6 +9,7 @@ use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\RewardController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\PengaturanController;
+use App\Http\Controllers\LaporanController;
 
 // =========================================
 // HALAMAN AWAL
@@ -171,6 +172,15 @@ Route::get('/pemesanan/{id}/struk', [
     PembayaranController::class,
     'struk'
 ])->name('pembayaran.struk')->middleware('auth');
+
+// =========================================
+// LAPORAN
+// =========================================
+
+Route::get('/laporan', [
+    LaporanController::class,
+    'index'
+])->name('laporan.index')->middleware('auth');
 
 // =========================================
 // PENGATURAN LAUNDRY
